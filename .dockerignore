@@ -1,0 +1,12 @@
+.git
+.github
+.vscode
+.tmp
+.react-router
+build
+coverage
+node_modules
+.env
+.env.*
+!.env.example
+*.log

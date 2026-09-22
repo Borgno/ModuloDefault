@@ -1,0 +1,54 @@
+# Dependencies
+node_modules/
+
+# Lockfiles: the project uses bun.lock; these block other package managers
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+bun.lockb
+
+# Build output and generated files
+/build/
+/dist/
+/.react-router/
+*.tsbuildinfo
+
+# Environment: everything starting with .env, except the example
+.env
+.env.*
+!.env.example
+
+# Logs cache and temp
+*.log
+.cache/
+.eslintcache
+.tmp/
+
+# Tests
+coverage/
+test-results/
+playwright-report/
+blob-report/
+e2e/.auth/
+
+# Obsidian vault mount
+/_obsidian
+obsidian_mount.sh
+
+# MCP config (per developer, may hold tokens)
+.mcp.json
+
+# Claude Code: per developer settings and worktrees
+.claude/settings.local.json
+.claude/worktrees/
+
+# Editor
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.sw?
+
+# OS
+.DS_Store
+Thumbs.db

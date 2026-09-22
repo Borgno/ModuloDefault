@@ -1,0 +1,24 @@
+name: Release Please
+
+# A cada push na main, mantém um PR de release com a próxima versão e o CHANGELOG, calculados a partir
+# das mensagens em Conventional Commits. Fazer merge desse PR cria a tag e a release.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        with:
+          # PR aberto pelo GITHUB_TOKEN não dispara o CI. Com um token próprio (RELEASE_PLEASE_TOKEN,
+          # PAT com escopo de repo), o PR de release roda os checks como qualquer outro.
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          config-file: .github/release-please-config.json
+          manifest-file: .github/.release-please-manifest.json

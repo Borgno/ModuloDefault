@@ -1,0 +1,67 @@
+# Regras de desenho da API (docs/PATTERNS/API-DESIGN.md) em forma executável. Roda no CI sobre o
+# contrato gerado das rotas: bun run lint:api.
+extends: ["spectral:oas"]
+
+rules:
+  # O template não publica servidores nem contato no contrato; o endereço é o da própria origem.
+  oas3-api-servers: off
+  info-contact: off
+  info-description: off
+  openapi-tags: off
+  operation-description: off
+  operation-operationId: off
+
+  path-camel-case:
+    description: Segmento de path em camelCase, sem hífen nem underscore (/auditEvents, /users/{id}).
+    severity: error
+    given: $.paths
+    then:
+      field: "@key"
+      function: pattern
+      functionOptions:
+        match: "^(/([a-z][a-zA-Z0-9]*|\\{[a-z][a-zA-Z0-9]*\\}))+$"
+
+  path-no-verbs:
+    description: Path é recurso, não ação. O verbo é o método HTTP.
+    severity: error
+    given: $.paths
+    then:
+      field: "@key"
+      function: pattern
+      functionOptions:
+        notMatch: "/(get|create|update|delete|remove|list|fetch|set|do|activate|deactivate|block|unblock|reset)[A-Z/]|/(get|create|update|delete|remove|list|fetch|activate|deactivate|block|unblock|reset)$"
+
+  property-camel-case:
+    description: Propriedade do JSON em camelCase.
+    severity: error
+    given: $..properties
+    then:
+      field: "@key"
+      function: pattern
+      functionOptions:
+        match: "^[a-z][a-zA-Z0-9]*$"
+
+  query-param-camel-case:
+    description: Parâmetro de query em camelCase.
+    severity: error
+    given: $.paths.*.*.parameters[?(@.in == 'query')].name
+    then:
+      function: pattern
+      functionOptions:
+        match: "^[a-z][a-zA-Z0-9]*$"
+
+  error-uses-problem-details:
+    description: Toda resposta 4xx e 5xx usa Problem Details (application/problem+json).
+    severity: error
+    given: $.paths.*.*.responses[?(@property.match(/^[45]/))].content
+    then:
+      field: application/problem+json
+      function: truthy
+
+  created-returns-201:
+    description: POST que cria recurso responde 201.
+    severity: error
+    given: $.paths[?(!@property.match(/\/current$/))].post.responses
+    then:
+      field: "201"
+      function: truthy

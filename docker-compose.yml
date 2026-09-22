@@ -1,0 +1,23 @@
+# Deploy no Dokploy: serviço do tipo Docker Compose apontando para este arquivo.
+#
+# Sem labels de Traefik: o domínio é cadastrado na aba Domains do Dokploy, que injeta os labels no
+# deploy. Sem `ports:` publicadas: o proxy alcança o container pela rede compartilhada, e publicar a
+# porta exporia o serviço direto, contornando o proxy e o TLS.
+
+services:
+  app:
+    build: .
+    expose:
+      - "${PORT:-3000}"
+    environment:
+      - PORT=${PORT:-3000}
+      - NODE_ENV=production
+      - SESSION_SECRET=${SESSION_SECRET}
+      - SEED_PASSWORD=${SEED_PASSWORD}
+    restart: unless-stopped
+    networks:
+      - dokploy-network
+
+networks:
+  dokploy-network:
+    external: true

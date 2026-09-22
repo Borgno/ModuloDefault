@@ -1,0 +1,5 @@
+build/
+.react-router/
+coverage/
+bun.lock
+.agents/
