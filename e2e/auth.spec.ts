@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
-import { ADMIN, logout, profileButton } from "./helpers";
+import { LOGIN_EMAIL_DOMAIN } from "../app/config/app";
+import { ADMIN, createUser, loginAsAdmin, logout, profileButton } from "./helpers";
 
 test("sem sessão, a tela inicial manda para o login guardando a volta", async ({ page }) => {
   await page.goto("/");
@@ -56,4 +57,26 @@ test("o botão do olho mostra e oculta a senha digitada", async ({ page }) => {
 
   await page.getByRole("button", { name: "Ocultar senha" }).click();
   await expect(password).toHaveAttribute("type", "password");
+});
+
+test("entra digitando só o nome, e o domínio da organização é completado", async ({ page }) => {
+  test.skip(!LOGIN_EMAIL_DOMAIN, "domínio de login desligado em app/config/app.ts");
+
+  const nome = `dani-${Date.now()}`;
+  await loginAsAdmin(page);
+  await createUser(page, {
+    fullName: "Dani Dominio",
+    email: `${nome}@${LOGIN_EMAIL_DOMAIN}`,
+    password: "inicial-123",
+  });
+  await logout(page);
+
+  await page.goto("/login");
+  await page.getByLabel("E-mail").fill(nome);
+  await expect(page.getByText(`@${LOGIN_EMAIL_DOMAIN}`, { exact: true })).toBeVisible();
+  await page.getByLabel("Senha", { exact: true }).fill("inicial-123");
+  await page.getByRole("button", { name: "Entrar" }).click();
+
+  // Usuário criado pelo admin entra obrigado a trocar a senha: chegar aqui prova o login.
+  await expect(page).toHaveURL("/change-password");
 });
