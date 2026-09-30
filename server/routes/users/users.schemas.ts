@@ -25,10 +25,12 @@ export const EmailSchema = z
   .toLowerCase()
   .pipe(z.email("Informe um e-mail válido."));
 
+// O bcrypt ignora o que passa de 72 bytes: o limite é em bytes para acento não estourar.
 export const PasswordSchema = z
   .string()
   .min(8, "Use ao menos 8 caracteres.")
-  .max(128, "Use no máximo 128 caracteres.");
+  .max(72, "Use no máximo 72 caracteres.")
+  .refine((value) => new TextEncoder().encode(value).length <= 72, "Use no máximo 72 caracteres.");
 
 export const UserIdParamSchema = z.object({
   id: z.uuid().openapi({ param: { name: "id", in: "path" } }),

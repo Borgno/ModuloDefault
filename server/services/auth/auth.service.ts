@@ -23,7 +23,7 @@ export async function login(input: { email: string; password: string; ip: string
   }
 
   const user = findUserByEmail(email);
-  // E-mail inexistente também paga o custo do scrypt: a resposta leva o mesmo tempo nos dois casos.
+  // E-mail inexistente também paga o custo do bcrypt: a resposta leva o mesmo tempo nos dois casos.
   const valid = await verifyPassword(input.password, user?.passwordHash ?? (await getDummyHash()));
 
   if (!user || !valid) {

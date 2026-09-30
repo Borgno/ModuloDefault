@@ -66,7 +66,7 @@ describe("POST /api/v1/sessions", () => {
   it("não guarda senha em texto no store", async () => {
     for (const user of store.users.values()) {
       expect(user.passwordHash).not.toContain(SEED_PASSWORD);
-      expect(user.passwordHash).toMatch(/^scrypt\$/);
+      expect(user.passwordHash).toMatch(/^\$2[aby]\$/);
     }
   });
 });

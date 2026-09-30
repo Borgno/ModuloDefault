@@ -1,44 +1,20 @@
-import { randomBytes, scrypt, timingSafeEqual, type ScryptOptions } from "node:crypto";
+import { randomBytes } from "node:crypto";
+import bcrypt from "bcryptjs";
 
-// Hash no formato scrypt$N$r$p$salt$hash (base64url). Os parâmetros vão junto para que dê para
+// Mesmo algoritmo e cost dos outros projetos da organização. O hash carrega o cost, então dá para
 // endurecer no futuro sem invalidar os hashes antigos.
-const PARAMS = { N: 16384, r: 8, p: 1 };
-const KEY_LENGTH = 64;
+const COST = 12;
 
-function derive(password: string, salt: Buffer, options: ScryptOptions) {
-  return new Promise<Buffer>((resolve, reject) => {
-    scrypt(password, salt, KEY_LENGTH, options, (error, key) =>
-      error ? reject(error) : resolve(key),
-    );
-  });
-}
-
-export async function hashPassword(password: string) {
-  const salt = randomBytes(16);
-  const key = await derive(password, salt, PARAMS);
-  return [
-    "scrypt",
-    PARAMS.N,
-    PARAMS.r,
-    PARAMS.p,
-    salt.toString("base64url"),
-    key.toString("base64url"),
-  ].join("$");
+export function hashPassword(password: string) {
+  return bcrypt.hash(password, COST);
 }
 
 export async function verifyPassword(password: string, stored: string) {
-  const [scheme, N, r, p, salt, hash] = stored.split("$");
-  if (scheme !== "scrypt" || !salt || !hash) return false;
-  const expected = Buffer.from(hash, "base64url");
-  const key = await derive(password, Buffer.from(salt, "base64url"), {
-    N: Number(N),
-    r: Number(r),
-    p: Number(p),
-  });
-  return key.length === expected.length && timingSafeEqual(key, expected);
+  if (!stored.startsWith("$2")) return false;
+  return bcrypt.compare(password, stored);
 }
 
-// Hash descartável, usado quando o e-mail não existe: o login paga o mesmo custo de scrypt e o tempo
+// Hash descartável, usado quando o e-mail não existe: o login paga o mesmo custo de bcrypt e o tempo
 // de resposta não denuncia quais e-mails estão cadastrados.
 let dummyHash: Promise<string> | null = null;
 export function getDummyHash() {

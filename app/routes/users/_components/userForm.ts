@@ -11,7 +11,8 @@ export const fullNameSchema = z
 export const passwordSchema = z
   .string()
   .min(8, "Use ao menos 8 caracteres.")
-  .max(128, "Use no máximo 128 caracteres.");
+  .max(72, "Use no máximo 72 caracteres.")
+  .refine((value) => new TextEncoder().encode(value).length <= 72, "Use no máximo 72 caracteres.");
 
 export const roleSchema = z.enum(["admin", "user"]);
 

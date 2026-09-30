@@ -5,7 +5,7 @@
   "type": "module",
   "packageManager": "bun@1.4.2",
   "scripts": {
-    "dev": "concurrently -k -n FRONT,BACK -c cyan,magenta \"bun run dev:api\" \"sleep 1 &&bun run dev:ui\"",
+    "dev": "concurrently -k -n BACK,FRONT -c magenta,cyan \"bun run dev:api\" \"sleep 1 &&bun run dev:ui\"",
     "dev:ui": "react-router dev",
     "dev:api": "tsx watch server/index.ts",
     "build": "react-router build && bun run build:api",
@@ -25,6 +25,7 @@
     "@hono/node-server": "^2.1.1",
     "@hono/swagger-ui": "^0.6.1",
     "@hono/zod-openapi": "^1.6.3",
+    "bcryptjs": "^3.0.3",
     "hono": "^4.13.8",
     "isbot": "^5",
     "zod": "^4.6.5"

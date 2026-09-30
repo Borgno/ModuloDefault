@@ -27,6 +27,7 @@ export function createApp({
 }: AppOptions = {}) {
   const app = new OpenAPIHono<HonoEnv>();
   const isApi = (path: string) => path === "/api" || path.startsWith("/api/");
+  const isAsset = (path: string) => path.startsWith("/assets/");
 
   if (logRequests) {
     // Só método e path, sem query nem corpo: nada sensível chega ao log.
@@ -65,7 +66,19 @@ export function createApp({
 
   if (serveClient) {
     const serveAssets = serveStatic({ root: CLIENT_DIR });
-    app.use("*", (c, next) => (isApi(c.req.path) ? next() : serveAssets(c, next)));
+    // O cache do estático é decidido aqui, e não pelo navegador ou pela CDN. Os arquivos de
+    // /assets/ têm o hash do conteúdo no nome: cache de 24h, e um build novo gera nomes novos. O
+    // resto, com o index.html à frente, revalida a cada acesso, para que o deploy chegue sem esperar
+    // o cache expirar.
+    app.use("*", async (c, next) => {
+      if (isApi(c.req.path)) return next();
+      // O serveStatic devolve a resposta em vez de gravá-la no contexto, e sem repassar o Hono
+      // seguiria para o notFound.
+      const served = await serveAssets(c, next);
+      if (served) c.res = served;
+      const immutable = isAsset(c.req.path) && c.res.status === 200;
+      c.header("Cache-Control", immutable ? "public, max-age=86400, immutable" : "no-cache");
+    });
   }
 
   const indexHtml = serveClient ? readFileSync(`${CLIENT_DIR}/index.html`, "utf8") : null;
@@ -85,7 +98,11 @@ export function createApp({
     }
 
     // Qualquer URL que não é da API é uma rota do SPA: devolve o index.html e o React Router assume.
-    if (!isApi(path) && indexHtml && c.req.method === "GET") return c.html(indexHtml);
+    // Arquivo de /assets/ que não existe (chunk de um deploy anterior) é 404: com o index.html e um
+    // 200, o HTML sairia com o cache dos assets.
+    if (!isApi(path) && !isAsset(path) && indexHtml && c.req.method === "GET") {
+      return c.html(indexHtml);
+    }
 
     return problemResponse(c, {
       status: 404,

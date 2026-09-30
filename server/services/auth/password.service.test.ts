@@ -8,6 +8,10 @@ describe("password.service", () => {
     expect(await verifyPassword("errada-123", hash)).toBe(false);
   });
 
+  it("gera hash bcrypt", async () => {
+    expect(await hashPassword("qualquer-123")).toMatch(/^\$2[aby]\$12\$/);
+  });
+
   it("gera hash diferente para a mesma senha (salt por hash)", async () => {
     expect(await hashPassword("mesma-senha")).not.toBe(await hashPassword("mesma-senha"));
   });
