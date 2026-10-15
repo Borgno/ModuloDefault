@@ -70,6 +70,7 @@ Curvas de animação: `ease-ui` (hover e foco, o padrão), `ease-layout` (sideba
 | :----------------------------------------------- | :-------------------------------------------------------------------------------- |
 | Topo de tela                                     | `PageHeader` (título, descrição, ações)                                           |
 | Lista (sempre com busca; filtros dentro do card) | `DataTable` (`search` obrigatório, `filters`) + `useListParams`                   |
+| Filtros de uma lista                             | `FilterButton` (`keys` da URL) + `FilterField`; fora de tabela, `ListToolbar`     |
 | Ver e editar um registro sem sair da lista       | `EntityDrawer` + `DrawerSection`                                                  |
 | Formulário curto de criação                      | `FormDialog` + `FormField`                                                        |
 | Escolher uma opção (select)                      | `SearchableSelect`: todo select tem busca; o `Select` simples é barrado pelo lint |

@@ -180,11 +180,30 @@ test("todo select tem busca: filtra as opções e escolhe", async ({ page }) => 
   await dialog.getByRole("button", { name: "Criar usuário" }).click();
   await expect(dialog).toBeHidden();
 
-  // O filtro da lista também é pesquisável.
-  await page.getByRole("combobox", { name: "Filtrar por cargo" }).click();
+  // O filtro da lista também é pesquisável, dentro do painel de filtros.
+  await page.getByRole("button", { name: /^Filtros/ }).click();
+  const filtros = page.getByRole("dialog", { name: "Filtros de pesquisa" });
+  await filtros.getByRole("combobox", { name: "Cargo" }).click();
   await page.getByRole("combobox", { name: "Buscar cargo..." }).fill("admin");
   await page.getByRole("option", { name: "Administrador" }).click();
   await expect(page).toHaveURL(/role=admin/);
   await expect(page.getByRole("row", { name: "Abrir Gabi Admin" })).toBeVisible();
   await expect(page.getByRole("row", { name: /Usuário Comum|Usuário Renomeado/ })).toHaveCount(0);
+});
+
+test("o botão de filtros conta os ativos e limpa todos de uma vez", async ({ page }) => {
+  await loginAsAdmin(page);
+  await page.goto("/users?role=admin&active=true");
+  const botao = page.getByRole("button", { name: /^Filtros/ });
+  await expect(botao).toHaveText(/^Filtros\s*2$/);
+
+  await botao.click();
+  const filtros = page.getByRole("dialog", { name: "Filtros de pesquisa" });
+  await expect(filtros.getByRole("combobox", { name: "Cargo" })).toHaveText("Administrador");
+  await expect(filtros.getByRole("combobox", { name: "Status" })).toHaveText("Ativos");
+
+  await filtros.getByRole("button", { name: "Limpar filtros" }).click();
+  await expect(page).not.toHaveURL(/role=|active=/);
+  await expect(botao).toHaveText("Filtros");
+  await expect(filtros.getByRole("button", { name: "Limpar filtros" })).toBeDisabled();
 });

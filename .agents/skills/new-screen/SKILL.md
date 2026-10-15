@@ -26,7 +26,8 @@ Procedimento operacional. O racional está em `docs/PATTERNS/FRONTEND-ARCH.md` e
    `void queryClient.prefetchQuery(...)` e a tela usa `useQuery` com a mesma função.
 4. **Mutations** com `useMutation`, invalidando as chaves afetadas no `onSuccess` e `toast.success`.
 5. **Tela:** `PageHeader` no topo. Lista com `DataTable`, sempre com busca (`search`, obrigatório) e
-   os filtros em `filters`, dentro do card; estado na URL (`useListParams`). Detalhe em
+   os filtros em `filters` como um `FilterButton` (`keys` com as chaves da URL que são filtro, cada
+   filtro num `FilterField`); estado na URL (`useListParams`), com o valor padrão fora dela. Detalhe em
    `EntityDrawer` com o id na URL. Criação em `FormDialog`. Confirmação com `useConfirm()`.
 6. **Formulário:** react-hook-form + `zodResolver`, schema espelhando o do servidor, `FormField` para
    cada campo e `applyApiErrors` no `onError`. Todo select é `SearchableSelect` (o lint barra o

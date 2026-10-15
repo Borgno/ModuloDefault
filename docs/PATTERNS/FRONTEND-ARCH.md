@@ -59,6 +59,10 @@ O prefixo `_` marca o que é privado da rota: nada fora de `routes/<rota>/` impo
   usam a mesma chave, então não há busca dupla.
 - **Toda lista é pesquisável.** O `DataTable` exige a prop `search` (sem ela, não compila), e a busca
   vai para a API como `?search=`, com debounce. Busca e filtros ficam dentro do card da tabela.
+- **Filtros num botão só.** A prop `filters` do `DataTable` recebe um `FilterButton` com as `keys`
+  da URL que são filtro, e cada filtro vai num `FilterField`. O valor padrão fica fora da URL (o
+  `onChange` grava `null` ao voltar ao padrão), então filtro ativo é chave presente: daí saem o
+  contador do botão e o "Limpar filtros". Lista que não é tabela usa `ListToolbar` no topo do card.
 - **Estado de lista na URL** (`useListParams`): busca, filtros, ordenação, página e o item aberto no
   drawer. Sobrevive ao reload, dá para mandar o link, e o voltar do navegador desfaz.
 - Mutations em `useMutation`, invalidando as queries afetadas no `onSuccess`.
@@ -153,7 +157,7 @@ Rotas com `clientLoader` só renderizam no navegador.
 - [ ] Rota restrita com `clientMiddleware` + `requireRole`.
 - [ ] Dados via `queryOptions` compartilhado entre `clientLoader` e `useQuery`.
 - [ ] Estados de carregamento (skeleton), vazio e erro distintos. Erro nunca vira lista vazia.
-- [ ] Lista com busca (prop `search` do `DataTable`) e filtros dentro do card.
+- [ ] Lista com busca (prop `search` do `DataTable`) e filtros num `FilterButton`.
 - [ ] Todo select é `SearchableSelect`.
 - [ ] Estado de lista na URL.
 - [ ] Testada nos dois temas e em viewport de celular.

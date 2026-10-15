@@ -111,7 +111,8 @@ Gates antes de dar uma tarefa por concluída: `lint`, `lint:api`, `format:check`
   prioridade da tela.
 - Tela nova: `PageHeader` no topo, item em `app/config/navigation.ts` (com `roles` se for restrita).
 - Toda lista é pesquisável: o `DataTable` exige `search` e mostra busca e filtros dentro do card, e a
-  rota da API aceita `?search=`.
+  rota da API aceita `?search=`. Os filtros vão num `FilterButton` (popover com contador e "Limpar
+  filtros"), cada um num `FilterField`. O valor padrão de um filtro fica fora da URL.
 - **Todo select tem busca:** use `SearchableSelect` (`app/components/patterns/`). O `Select` simples do
   shadcn é barrado pelo ESLint.
 - Na interface, o termo para `role` é "cargo".

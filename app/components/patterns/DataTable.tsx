@@ -1,6 +1,5 @@
-import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "~/components/ui/button";
-import { Input } from "~/components/ui/input";
 import { Skeleton } from "~/components/ui/skeleton";
 import {
   Table,
@@ -13,6 +12,7 @@ import {
 import { formatNumber } from "~/lib/format";
 import { cn } from "~/lib/utils";
 import { EmptyState, ErrorState } from "./EmptyState";
+import { ListToolbar, type ListSearch } from "./ListToolbar";
 
 export type Column<T> = {
   key: string;
@@ -24,9 +24,8 @@ export type Column<T> = {
 };
 
 type DataTableProps<T> = {
-  // Toda lista é pesquisável: a busca é obrigatória e vai para a API (?search=), não filtra no navegador.
-  search: { value: string; onChange: (value: string) => void; placeholder: string };
-  // Filtros da lista (selects), ao lado da busca, dentro do card.
+  search: ListSearch;
+  // Filtros da lista: um FilterButton, ao lado da busca, dentro do card.
   filters?: React.ReactNode;
   columns: Column<T>[];
   rows: T[] | undefined;
@@ -103,20 +102,7 @@ export function DataTable<T>({
 
   return (
     <div className="overflow-hidden rounded-2xl border bg-card shadow-card">
-      <div className="flex flex-wrap items-center gap-2 border-b px-6 py-4">
-        <div className="relative min-w-60 flex-1">
-          <Search size={16} className="absolute top-1/2 left-3 -translate-y-1/2 text-dim" />
-          <Input
-            type="search"
-            aria-label={search.placeholder}
-            placeholder={search.placeholder}
-            value={search.value}
-            onChange={(event) => search.onChange(event.target.value)}
-            className="pl-9"
-          />
-        </div>
-        {filters}
-      </div>
+      <ListToolbar search={search} filters={filters} />
 
       {error && !rows ? (
         <ErrorState error={error} onRetry={onRetry} />
