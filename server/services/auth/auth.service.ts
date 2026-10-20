@@ -10,7 +10,17 @@ import { recordFailure, recordSuccess, retryAfterSeconds } from "./loginThrottle
 import { getDummyHash, verifyPassword } from "./password.service";
 import { createSessionToken, readSessionToken } from "./session.service";
 
-const INVALID_CREDENTIALS = "E-mail ou senha incorretos.";
+const INVALID_CREDENTIALS = "Usuário ou senha incorretos.";
+
+// O login é o nome de usuário (a parte antes do "@" do e-mail) ou o e-mail completo. Se o mesmo nome
+// existe em domínios diferentes, a busca por nome falha para não entrar na conta errada.
+export function findUserByLogin(login: string) {
+  const normalized = normalizeEmail(login);
+  if (normalized.includes("@")) return findUserByEmail(normalized);
+  const prefix = `${normalized}@`;
+  const matches = [...store.users.values()].filter((user) => user.email.startsWith(prefix));
+  return matches.length === 1 ? matches[0] : undefined;
+}
 
 export async function login(input: { email: string; password: string; ip: string }) {
   const email = normalizeEmail(input.email);
@@ -22,7 +32,7 @@ export async function login(input: { email: string; password: string; ip: string
     });
   }
 
-  const user = findUserByEmail(email);
+  const user = findUserByLogin(email);
   // E-mail inexistente também paga o custo do bcrypt: a resposta leva o mesmo tempo nos dois casos.
   const valid = await verifyPassword(input.password, user?.passwordHash ?? (await getDummyHash()));
 

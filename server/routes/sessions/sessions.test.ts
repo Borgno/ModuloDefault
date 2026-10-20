@@ -28,6 +28,12 @@ describe("POST /api/v1/sessions", () => {
     expect(findUserByEmail(ADMIN_EMAIL)?.lastLoginAt).toBeInstanceOf(Date);
   });
 
+  it("entra só com o nome antes do @", async () => {
+    const res = await login(ADMIN_EMAIL.split("@")[0], SEED_PASSWORD);
+    expect(res.status).toBe(201);
+    expect(await res.json()).toMatchObject({ email: ADMIN_EMAIL });
+  });
+
   it("aceita e-mail com maiúsculas e espaços", async () => {
     const res = await login("  Admin@Local.Test ", SEED_PASSWORD);
     expect(res.status).toBe(201);
@@ -57,7 +63,7 @@ describe("POST /api/v1/sessions", () => {
   });
 
   it("responde 422 com os campos quando o corpo é inválido", async () => {
-    const res = await login("nao-e-email", "");
+    const res = await login("  ", "");
     expect(res.status).toBe(422);
     const body = (await res.json()) as { errors: { field: string }[] };
     expect(body.errors.map((e) => e.field).sort()).toEqual(["email", "password"]);

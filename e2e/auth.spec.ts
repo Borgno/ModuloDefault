@@ -1,5 +1,4 @@
 import { expect, test } from "@playwright/test";
-import { LOGIN_EMAIL_DOMAIN } from "../app/config/app";
 import { ADMIN, createUser, loginAsAdmin, logout, profileButton } from "./helpers";
 
 test("sem sessão, a tela inicial manda para o login guardando a volta", async ({ page }) => {
@@ -10,15 +9,15 @@ test("sem sessão, a tela inicial manda para o login guardando a volta", async (
 
 test("senha errada mostra o erro da API", async ({ page }) => {
   await page.goto("/login");
-  await page.getByLabel("E-mail").fill(ADMIN.email);
+  await page.getByLabel("Usuário").fill(ADMIN.email);
   await page.getByLabel("Senha", { exact: true }).fill("senha-errada");
   await page.getByRole("button", { name: "Entrar" }).click();
-  await expect(page.getByRole("alert")).toHaveText("E-mail ou senha incorretos.");
+  await expect(page.getByRole("alert")).toHaveText("Usuário ou senha incorretos.");
 });
 
 test("login, sessão sobrevive ao reload, e logout encerra", async ({ page }) => {
   await page.goto("/login");
-  await page.getByLabel("E-mail").fill(ADMIN.email);
+  await page.getByLabel("Usuário").fill(ADMIN.email);
   await page.getByLabel("Senha", { exact: true }).fill(ADMIN.password);
   await page.getByRole("button", { name: "Entrar" }).click();
 
@@ -59,21 +58,18 @@ test("o botão do olho mostra e oculta a senha digitada", async ({ page }) => {
   await expect(password).toHaveAttribute("type", "password");
 });
 
-test("entra digitando só o nome, e o domínio da organização é completado", async ({ page }) => {
-  test.skip(!LOGIN_EMAIL_DOMAIN, "domínio de login desligado em app/config/app.ts");
-
+test("entra digitando só o nome, sem o domínio do e-mail", async ({ page }) => {
   const nome = `dani-${Date.now()}`;
   await loginAsAdmin(page);
   await createUser(page, {
     fullName: "Dani Dominio",
-    email: `${nome}@${LOGIN_EMAIL_DOMAIN}`,
+    email: `${nome}@borgnotransportes.com.br`,
     password: "inicial-123",
   });
   await logout(page);
 
   await page.goto("/login");
-  await page.getByLabel("E-mail").fill(nome);
-  await expect(page.getByText(`@${LOGIN_EMAIL_DOMAIN}`, { exact: true })).toBeVisible();
+  await page.getByLabel("Usuário").fill(nome);
   await page.getByLabel("Senha", { exact: true }).fill("inicial-123");
   await page.getByRole("button", { name: "Entrar" }).click();
 
