@@ -59,6 +59,11 @@ O prefixo `_` marca o que é privado da rota: nada fora de `routes/<rota>/` impo
   usam a mesma chave, então não há busca dupla.
 - **Toda lista é pesquisável.** O `DataTable` exige a prop `search` (sem ela, não compila), e a busca
   vai para a API como `?search=`, com debounce. Busca e filtros ficam dentro do card da tabela.
+- **Busca com `campo:valor`.** O estado da caixa vem do `useListSearch`, que só manda o termo a partir
+  de 3 caracteres. A lista passa em `search.keys` as chaves que o service aceita e, se tiver data, um
+  `periodLabel`. O botão de filtro dentro da caixa insere `chave:` e escreve `de:`/`ate:`; a caixa
+  avisa termo curto e filtro com valor curto, que o servidor descartaria em silêncio. `campo:valor` e
+  o `FilterButton` convivem: os dois viram filtro no servidor, em E.
 - **Filtros num botão só.** A prop `filters` do `DataTable` recebe um `FilterButton` com as `keys`
   da URL que são filtro, e cada filtro vai num `FilterField`. O valor padrão fica fora da URL (o
   `onChange` grava `null` ao voltar ao padrão), então filtro ativo é chave presente: daí saem o

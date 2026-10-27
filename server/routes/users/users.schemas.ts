@@ -1,5 +1,11 @@
 import { z } from "@hono/zod-openapi";
-import { listSchema, PageQuerySchema, QueryBooleanSchema, sortSchema } from "../../schemas/common";
+import {
+  listSchema,
+  PageQuerySchema,
+  QueryBooleanSchema,
+  searchSchema,
+  sortSchema,
+} from "../../schemas/common";
 
 export const RoleSchema = z.enum(["admin", "user"]).openapi("Role");
 
@@ -37,12 +43,7 @@ export const UserIdParamSchema = z.object({
 });
 
 export const ListUsersQuerySchema = PageQuerySchema.extend({
-  search: z
-    .string()
-    .trim()
-    .min(1)
-    .optional()
-    .openapi({ description: "Parte do nome ou do e-mail" }),
+  search: searchSchema(["nome", "email", "cargo", "status"]),
   role: RoleSchema.optional(),
   active: QueryBooleanSchema.optional().openapi({ type: "string", enum: ["true", "false"] }),
   sort: sortSchema(["fullName", "email", "createdAt", "lastLoginAt"], "fullName"),

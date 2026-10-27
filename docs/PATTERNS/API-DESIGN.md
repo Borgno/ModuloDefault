@@ -30,6 +30,12 @@ no CI (`bun run lint:api`): rota fora do padrão quebra o build.
   Ordenação é o nome do campo, com `-` para decrescente. `pageSize` tem teto de 100.
 - **Toda lista aceita `search`**, porque toda lista da interface é pesquisável. A busca é feita no
   servidor, nunca filtrando no navegador a página que chegou.
+- **`search` é uma caixa só, com texto livre e `campo:valor`** (`server/lib/search.ts`, a mesma
+  gramática da busca do IntraNet). Cada lista declara as próprias chaves (`nome:`, `cargo:`...), e
+  `de:`/`ate:` (DD/MM/AAAA, dia em -03:00) recortam o período em toda lista. Valor com espaço vai entre
+  aspas: `nome:"ana souza"`. Chave desconhecida fica como texto literal, então `14:30` não vira filtro.
+  Sem acento e sem caixa nos dois lados. Mínimo de 3 caracteres por parte e 100 no termo: abaixo do
+  mínimo a rota responde `422`, e um `campo:valor` curto é descartado sozinho.
 - **Sucesso sem envelope redundante.** Recurso único volta direto. Lista volta
   `{ data: [...], meta: { page, pageSize, total } }`. Nada de `{ success: true }`: o status HTTP já
   diz isso. Datas em ISO 8601 UTC.

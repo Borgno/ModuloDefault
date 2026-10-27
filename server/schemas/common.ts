@@ -1,4 +1,5 @@
 import { z } from "@hono/zod-openapi";
+import { MAX_SEARCH_LENGTH, MIN_SEARCH_LENGTH } from "../lib/search";
 
 // Paginação e ordenação de listas, em query string: ?page=2&pageSize=20&sort=-createdAt
 export const PageQuerySchema = z.object({
@@ -29,4 +30,19 @@ export function sortSchema<const F extends readonly [string, ...string[]]>(
 ) {
   const values = fields.flatMap((field) => [field, `-${field}`]) as [string, ...string[]];
   return z.enum(values).default(fallback);
+}
+
+// Caixa de busca de lista: texto livre mais `campo:valor` (server/lib/search.ts). Cada rota lista as
+// próprias chaves; `de:` e `ate:` valem em todas.
+export function searchSchema(keys: readonly string[]) {
+  return z
+    .string()
+    .trim()
+    .min(MIN_SEARCH_LENGTH, `Digite ao menos ${MIN_SEARCH_LENGTH} caracteres.`)
+    .max(MAX_SEARCH_LENGTH, `Use no máximo ${MAX_SEARCH_LENGTH} caracteres.`)
+    .optional()
+    .openapi({
+      description: `Texto livre e campo:valor. Chaves: ${[...keys, "de", "ate"].map((k) => `${k}:`).join(", ")} (de/ate em DD/MM/AAAA).`,
+      example: "ana cargo:admin de:01/10/2026",
+    });
 }

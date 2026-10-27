@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { ApiProblem } from "../../lib/problem";
-import { store, type RoleCode, type UserRecord } from "../../lib/memoryStore";
+import { ROLES, store, type RoleCode, type UserRecord } from "../../lib/memoryStore";
+import { inPeriod, matchesTerm, parseSearch, type SearchFilter } from "../../lib/search";
 import { recordAudit } from "../audit/audit.service";
 import { generateTemporaryPassword, hashPassword, verifyPassword } from "../auth/password.service";
 import { paginate, sortBy } from "../pagination";
@@ -117,13 +118,34 @@ export type ListUsersQuery = {
   pageSize: number;
 };
 
+// Chaves de `campo:valor` da busca de usuários. `de:` e `ate:` (data de criação) valem em toda lista.
+export const USER_SEARCH_KEYS = ["nome", "email", "cargo", "status"] as const;
+
+const roleName = (role: RoleCode) => ROLES.find((r) => r.code === role)?.name ?? role;
+
+// O valor já chega normalizado. Cargo casa o código ou o nome ("adm", "administrador"); status casa
+// pelo começo, para "ati" não trazer os inativos.
+function matchesFilter(user: UserRecord, { key, value }: SearchFilter) {
+  switch (key) {
+    case "nome":
+      return matchesTerm(user.fullName, value);
+    case "email":
+      return matchesTerm(user.email, value);
+    case "cargo":
+      return matchesTerm(user.role, value) || matchesTerm(roleName(user.role), value);
+    case "status":
+      return (user.active ? "ativo" : "inativo").startsWith(value);
+    default:
+      return true;
+  }
+}
+
 export function listUsers(query: ListUsersQuery) {
-  const search = query.search?.trim().toLowerCase();
+  const { text, filters, period } = parseSearch(query.search, USER_SEARCH_KEYS);
   const filtered = [...store.users.values()]
-    .filter(
-      (user) =>
-        !search || user.fullName.toLowerCase().includes(search) || user.email.includes(search),
-    )
+    .filter((user) => !text || matchesTerm(`${user.fullName} ${user.email}`, text))
+    .filter((user) => filters.every((filter) => matchesFilter(user, filter)))
+    .filter((user) => inPeriod(user.createdAt, period))
     .filter((user) => !query.role || user.role === query.role)
     .filter((user) => query.active === undefined || user.active === query.active);
 

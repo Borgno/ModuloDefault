@@ -16,7 +16,10 @@ Procedimento operacional. O racional completo está em `docs/PATTERNS/BACKEND-AR
   Sem `try/catch` no handler.
 - **Path em camelCase, substantivo no plural, sem verbo.** Ação é o método HTTP. Filtro, busca,
   ordenação e paginação na query string.
-- Toda rota de lista aceita `search` na query (busca no servidor), além de paginação e ordenação.
+- Toda rota de lista aceita `search` na query (busca no servidor), além de paginação e ordenação. O
+  `search` é `searchSchema([...chaves])` de `server/schemas/common.ts`, e o service passa o termo por
+  `parseSearch` (`server/lib/search.ts`) com as chaves da lista: texto livre, `campo:valor` e o
+  período `de:`/`ate:`. Comparação com `matchesTerm`/`normalizeTerm` (sem acento e sem caixa).
 - Sucesso sem envelope: recurso direto, ou `{ data, meta }` para lista (`listSchema` de
   `server/schemas/common.ts`).
 
