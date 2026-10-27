@@ -59,6 +59,7 @@ const columns: Column<User>[] = [
     key: "createdAt",
     header: "Criado em",
     sortField: "createdAt",
+    hideOnMobile: true,
     cell: (user) => <span className="font-mono text-xs">{formatDateTime(user.createdAt)}</span>,
   },
 ];

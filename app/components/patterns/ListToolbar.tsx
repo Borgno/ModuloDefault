@@ -160,7 +160,7 @@ function SearchBox({ search }: { search: ListSearch }) {
                         Limpar
                       </Button>
                     </div>
-                    <div className="mt-3 grid grid-cols-2 gap-2">
+                    <div className="mt-3 grid gap-3">
                       <div className="space-y-1.5">
                         <Label htmlFor={fromId} className="text-xs text-muted-foreground">
                           De

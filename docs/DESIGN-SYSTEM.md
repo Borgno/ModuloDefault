@@ -117,4 +117,15 @@ O tema escuro é a classe `.dark` no `<html>`, gravada no `localStorage` (`theme
 - [ ] Toda superfície interativa tem hover e foco visível.
 - [ ] Estados de carregamento, vazio e erro distintos.
 - [ ] Modal e drawer fecham no Esc e devolvem o foco.
-- [ ] Conferido nos dois temas e em viewport de celular.
+- [ ] Conferido nos dois temas e em viewport de celular (390px), sem rolagem horizontal.
+
+## Celular
+
+Abaixo de `md` (768px) a sidebar vira a barra inferior (`MobileNav`) e:
+
+- O `DataTable` vira lista de cards. A primeira coluna é o título do card, e as outras viram pares de
+  rótulo e valor. Coluna secundária sai do card com `hideOnMobile`. A ordenação, que no desktop é o
+  clique no cabeçalho, vira o select "Ordenar por".
+- O `EntityDrawer` ocupa a largura toda.
+- Altura de tela é `h-dvh`, nunca `h-screen`: no celular o `100vh` conta a barra do navegador e
+  esconde o fim da tela.

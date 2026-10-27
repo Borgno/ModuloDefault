@@ -41,4 +41,5 @@ Procedimento operacional. O racional está em `docs/PATTERNS/FRONTEND-ARCH.md` e
 ## Antes de concluir
 
 `bun run lint`, `bun run typecheck`, `bun run test:e2e`, e a tela conferida nos dois temas e em
-viewport de celular.
+viewport de celular (390px, sem rolagem horizontal; o `DataTable` vira cards e coluna secundária leva
+`hideOnMobile`). Ver "Celular" em `docs/DESIGN-SYSTEM.md`.

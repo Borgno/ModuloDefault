@@ -1,5 +1,7 @@
 import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Fragment, useId } from "react";
 import { Button } from "~/components/ui/button";
+import { Label } from "~/components/ui/label";
 import { Skeleton } from "~/components/ui/skeleton";
 import {
   Table,
@@ -13,6 +15,7 @@ import { formatNumber } from "~/lib/format";
 import { cn } from "~/lib/utils";
 import { EmptyState, ErrorState } from "./EmptyState";
 import { ListToolbar, type ListSearch } from "./ListToolbar";
+import { SearchableSelect } from "./SearchableSelect";
 
 export type Column<T> = {
   key: string;
@@ -21,6 +24,9 @@ export type Column<T> = {
   // Campo de ordenação na API. Sem ele, a coluna não ordena.
   sortField?: string;
   className?: string;
+  // No celular a tabela vira lista de cards: a primeira coluna é o título do card e as outras viram
+  // pares rótulo e valor. Coluna secundária pode sair do card.
+  hideOnMobile?: boolean;
 };
 
 type DataTableProps<T> = {
@@ -76,6 +82,44 @@ function SortButton({
   );
 }
 
+// Ordenação no celular, onde não há cabeçalho de coluna para clicar: cada coluna ordenável vira duas
+// opções, crescente e decrescente.
+function MobileSort<T>({
+  columns,
+  sort,
+  onSortChange,
+}: {
+  columns: Column<T>[];
+  sort?: string;
+  onSortChange: (sort: string) => void;
+}) {
+  const id = useId();
+  const options = columns.flatMap((column) =>
+    column.sortField
+      ? [
+          { value: column.sortField, label: `${column.header} (crescente)` },
+          { value: `-${column.sortField}`, label: `${column.header} (decrescente)` },
+        ]
+      : [],
+  );
+  if (options.length === 0) return null;
+  return (
+    <div className="flex items-center gap-3 border-b px-6 py-3 md:hidden">
+      <Label htmlFor={id} className="shrink-0 text-xs text-muted-foreground">
+        Ordenar por
+      </Label>
+      <SearchableSelect
+        id={id}
+        value={sort ?? ""}
+        onChange={onSortChange}
+        options={options}
+        searchPlaceholder="Buscar ordenação..."
+        className="flex-1"
+      />
+    </div>
+  );
+}
+
 // Padding das células: mais folga na primeira e na última coluna, alinhado com a barra de busca.
 const cellPadding = "px-4 first:pl-6 last:pr-6";
 
@@ -96,6 +140,24 @@ export function DataTable<T>({
   empty,
 }: DataTableProps<T>) {
   const showSkeleton = isLoading && !rows;
+  const [titleColumn, ...detailColumns] = columns;
+  const mobileColumns = detailColumns.filter((column) => !column.hideOnMobile);
+
+  // Linha e card abrem o item do mesmo jeito: clique, Enter ou espaço.
+  const rowProps = (row: T) =>
+    onRowClick
+      ? {
+          onClick: () => onRowClick(row),
+          onKeyDown: (event: React.KeyboardEvent) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              onRowClick(row);
+            }
+          },
+          tabIndex: 0,
+          "aria-label": rowLabel?.(row),
+        }
+      : {};
   const totalPages = pagination
     ? Math.max(1, Math.ceil(pagination.total / pagination.pageSize))
     : 1;
@@ -109,85 +171,116 @@ export function DataTable<T>({
       ) : !showSkeleton && rows?.length === 0 ? (
         <EmptyState {...empty} />
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              {columns.map((column) => {
-                const direction =
-                  column.sortField && sort === column.sortField
-                    ? "ascending"
-                    : column.sortField && sort === `-${column.sortField}`
-                      ? "descending"
-                      : undefined;
-                return (
-                  <TableHead
-                    key={column.key}
-                    aria-sort={direction}
-                    className={cn(
-                      "h-11 text-[10px] font-bold tracking-widest text-muted-foreground uppercase",
-                      cellPadding,
-                      column.className,
-                    )}
-                  >
-                    {column.sortField && onSortChange ? (
-                      <SortButton
-                        label={column.header}
-                        field={column.sortField}
-                        sort={sort}
-                        onSortChange={onSortChange}
-                      />
-                    ) : (
-                      column.header
-                    )}
-                  </TableHead>
-                );
-              })}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+        <>
+          {sort !== undefined && onSortChange && (
+            <MobileSort columns={columns} sort={sort} onSortChange={onSortChange} />
+          )}
+          <ul aria-label="Registros" className="divide-y md:hidden">
             {showSkeleton
-              ? Array.from({ length: 5 }, (_, index) => (
-                  <TableRow key={index}>
-                    {columns.map((column) => (
-                      <TableCell key={column.key} className={cellPadding}>
-                        <Skeleton className="h-4 w-3/4" />
-                      </TableCell>
-                    ))}
-                  </TableRow>
+              ? Array.from({ length: 3 }, (_, index) => (
+                  <li key={index} className="space-y-2 px-6 py-4">
+                    <Skeleton className="h-4 w-1/2" />
+                    <Skeleton className="h-3 w-3/4" />
+                  </li>
                 ))
               : rows?.map((row) => (
-                  <TableRow
-                    key={rowKey(row)}
-                    onClick={onRowClick ? () => onRowClick(row) : undefined}
-                    onKeyDown={
-                      onRowClick
-                        ? (event) => {
-                            if (event.key === "Enter" || event.key === " ") {
-                              event.preventDefault();
-                              onRowClick(row);
-                            }
-                          }
-                        : undefined
-                    }
-                    tabIndex={onRowClick ? 0 : undefined}
-                    aria-label={onRowClick && rowLabel ? rowLabel(row) : undefined}
-                    className={cn(
-                      onRowClick &&
-                        "cursor-pointer focus-visible:bg-accent focus-visible:outline-none",
-                    )}
-                  >
-                    {columns.map((column) => (
-                      <TableCell
-                        key={column.key}
-                        className={cn("py-3", cellPadding, column.className)}
-                      >
-                        {column.cell(row)}
-                      </TableCell>
-                    ))}
-                  </TableRow>
+                  <li key={rowKey(row)}>
+                    <div
+                      {...rowProps(row)}
+                      role={onRowClick ? "button" : undefined}
+                      className={cn(
+                        "space-y-3 px-6 py-4",
+                        onRowClick &&
+                          "cursor-pointer transition-colors hover:bg-muted/50 focus-visible:bg-accent focus-visible:outline-none",
+                      )}
+                    >
+                      <div className="min-w-0">{titleColumn.cell(row)}</div>
+                      {mobileColumns.length > 0 && (
+                        <dl className="grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2">
+                          {mobileColumns.map((column) => (
+                            <Fragment key={column.key}>
+                              <dt className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+                                {column.header}
+                              </dt>
+                              <dd className="min-w-0">{column.cell(row)}</dd>
+                            </Fragment>
+                          ))}
+                        </dl>
+                      )}
+                    </div>
+                  </li>
                 ))}
-          </TableBody>
-        </Table>
+          </ul>
+          <div className="hidden md:block">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  {columns.map((column) => {
+                    const direction =
+                      column.sortField && sort === column.sortField
+                        ? "ascending"
+                        : column.sortField && sort === `-${column.sortField}`
+                          ? "descending"
+                          : undefined;
+                    return (
+                      <TableHead
+                        key={column.key}
+                        aria-sort={direction}
+                        className={cn(
+                          "h-11 text-[10px] font-bold tracking-widest text-muted-foreground uppercase",
+                          cellPadding,
+                          column.className,
+                        )}
+                      >
+                        {column.sortField && onSortChange ? (
+                          <SortButton
+                            label={column.header}
+                            field={column.sortField}
+                            sort={sort}
+                            onSortChange={onSortChange}
+                          />
+                        ) : (
+                          column.header
+                        )}
+                      </TableHead>
+                    );
+                  })}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {showSkeleton
+                  ? Array.from({ length: 5 }, (_, index) => (
+                      <TableRow key={index}>
+                        {columns.map((column) => (
+                          <TableCell key={column.key} className={cellPadding}>
+                            <Skeleton className="h-4 w-3/4" />
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))
+                  : rows?.map((row) => (
+                      <TableRow
+                        key={rowKey(row)}
+                        {...rowProps(row)}
+                        className={cn(
+                          onRowClick &&
+                            "cursor-pointer focus-visible:bg-accent focus-visible:outline-none",
+                        )}
+                      >
+                        {columns.map((column) => (
+                          <TableCell
+                            key={column.key}
+                            className={cn("py-3", cellPadding, column.className)}
+                          >
+                            {column.cell(row)}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+              </TableBody>
+            </Table>
+          </div>
+        </>
       )}
 
       {pagination && pagination.total > 0 && (

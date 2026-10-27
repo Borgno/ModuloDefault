@@ -28,7 +28,7 @@ export function EntityDrawer({
 }: EntityDrawerProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-lg">
+      <SheetContent className="flex flex-col gap-0 p-0 data-[side=right]:w-full data-[side=right]:sm:max-w-lg">
         <SheetHeader className="border-b p-6">
           <SheetTitle className="text-lg font-bold">{title}</SheetTitle>
           {description && <SheetDescription>{description}</SheetDescription>}

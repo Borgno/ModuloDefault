@@ -165,4 +165,5 @@ Rotas com `clientLoader` só renderizam no navegador.
 - [ ] Lista com busca (prop `search` do `DataTable`) e filtros num `FilterButton`.
 - [ ] Todo select é `SearchableSelect`.
 - [ ] Estado de lista na URL.
-- [ ] Testada nos dois temas e em viewport de celular.
+- [ ] Testada nos dois temas e em viewport de celular (390px), sem rolagem horizontal. Lista com
+      muitas colunas marca as secundárias com `hideOnMobile`.
