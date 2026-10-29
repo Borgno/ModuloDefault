@@ -25,7 +25,9 @@ Procedimento operacional. O racional está em `docs/PATTERNS/FRONTEND-ARCH.md` e
 3. **Queries** em `_hooks/<dominio>.queries.ts` com `queryOptions`. O `clientLoader` faz
    `void queryClient.prefetchQuery(...)` e a tela usa `useQuery` com a mesma função.
 4. **Mutations** com `useMutation`, invalidando as chaves afetadas no `onSuccess` e `toast.success`.
-5. **Tela:** `PageHeader` no topo. Lista com `DataTable`, sempre com busca (`search`, obrigatório) e
+5. **Tela:** `PageHeader` no topo. Lista com `DataTable`, sempre com busca (`search`, obrigatório, com
+   o estado do `useListSearch` e as `keys` de `campo:valor` iguais às do service; `periodLabel` liga o
+   período) e
    os filtros em `filters` como um `FilterButton` (`keys` com as chaves da URL que são filtro, cada
    filtro num `FilterField`); estado na URL (`useListParams`), com o valor padrão fora dela. Detalhe em
    `EntityDrawer` com o id na URL. Criação em `FormDialog`. Confirmação com `useConfirm()`.
@@ -39,4 +41,5 @@ Procedimento operacional. O racional está em `docs/PATTERNS/FRONTEND-ARCH.md` e
 ## Antes de concluir
 
 `bun run lint`, `bun run typecheck`, `bun run test:e2e`, e a tela conferida nos dois temas e em
-viewport de celular.
+viewport de celular (390px, sem rolagem horizontal; o `DataTable` vira cards e coluna secundária leva
+`hideOnMobile`). Ver "Celular" em `docs/DESIGN-SYSTEM.md`.

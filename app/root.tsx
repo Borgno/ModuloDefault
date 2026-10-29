@@ -20,6 +20,13 @@ import "./app.css";
 
 export const meta: Route.MetaFunction = () => [{ title: APP_NAME }];
 
+// Manifest do app instalado: o iOS só entrega Web Push com o site na tela inicial (16.4 ou mais novo).
+// Troque nome, cor e ícones (public/manifest.webmanifest e public/icons/) ao criar o projeto.
+export const links: Route.LinksFunction = () => [
+  { rel: "manifest", href: "/manifest.webmanifest" },
+  { rel: "apple-touch-icon", href: "/icons/icon-192.png" },
+];
+
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
     // suppressHydrationWarning: o script do tema pode pôr .dark no <html> antes do React hidratar.
@@ -72,7 +79,7 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-6">
+    <main className="flex min-h-dvh items-center justify-center p-6">
       <div className="w-full max-w-lg rounded-3xl border bg-card p-8 shadow-card-elevated">
         <h1 className="mb-2 text-xl font-bold tracking-tight">{title}</h1>
         <p className="mb-6 font-inter text-sm text-muted-foreground">{details}</p>

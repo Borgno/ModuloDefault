@@ -1,8 +1,9 @@
 import { getConnInfo } from "@hono/node-server/conninfo";
 import type { RouteHandler } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import { login } from "../../services/auth/auth.service";
-import { clearSessionCookie, setSessionCookie } from "../../lib/sessionCookie";
+import { getCookie } from "hono/cookie";
+import { endSession, login } from "../../services/auth/auth.service";
+import { clearSessionCookie, SESSION_COOKIE, setSessionCookie } from "../../lib/sessionCookie";
 import type { HonoEnv } from "../../types";
 import type { createSessionRoute, deleteCurrentSessionRoute } from "./sessions.routes";
 
@@ -30,6 +31,7 @@ export const deleteCurrentSessionHandler: RouteHandler<
   typeof deleteCurrentSessionRoute,
   HonoEnv
 > = async (c) => {
+  endSession(getCookie(c, SESSION_COOKIE));
   clearSessionCookie(c);
   return c.body(null, 204);
 };

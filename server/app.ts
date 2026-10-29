@@ -59,6 +59,8 @@ export function createApp({
       { name: "Me", description: "O usuário da sessão" },
       { name: "Users", description: "Gestão de usuários (admin)" },
       { name: "Audit", description: "Histórico de ações (admin)" },
+      { name: "Notifications", description: "Notificações do usuário, stream e Web Push" },
+      { name: "Chat", description: "Conversas entre os usuários, de duas pessoas ou em grupo" },
     ],
   });
   v1.get("/docs", swaggerUI({ url: `${API_V1}/openapi.json` }));

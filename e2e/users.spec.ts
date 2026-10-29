@@ -207,3 +207,32 @@ test("o botão de filtros conta os ativos e limpa todos de uma vez", async ({ pa
   await expect(botao).toHaveText("Filtros");
   await expect(filtros.getByRole("button", { name: "Limpar filtros" })).toBeDisabled();
 });
+
+test("a busca aceita campo:valor e o período escrito pelo painel", async ({ page }) => {
+  await loginAsAdmin(page);
+  await page.goto("/users");
+  const box = page.getByRole("searchbox", { name: "Buscar por nome ou e-mail" });
+
+  // O painel insere a chave; o valor curto avisa, o completo filtra.
+  await page.getByRole("button", { name: "Campos e período da busca" }).click();
+  await page.getByRole("button", { name: "cargo:", exact: true }).click();
+  await page.keyboard.press("Escape");
+  await expect(box).toHaveValue("cargo:");
+  await box.fill("cargo:ad");
+  await expect(page.getByText("O valor de cargo: é curto demais")).toBeVisible();
+  await box.fill("cargo:administrador");
+  await expect(page).toHaveURL(/search=cargo%3Aadministrador/);
+  // Outros testes da rodada criam admins: o que importa é o usuário comum sair.
+  await expect(page.getByRole("row", { name: "Abrir Administrador" })).toBeVisible();
+  await expect(page.getByRole("row").filter({ hasText: "user@local.test" })).toHaveCount(0);
+
+  // Período no passado: ninguém foi criado antes de 2000.
+  await page.getByRole("button", { name: "Campos e período da busca" }).click();
+  await page.getByLabel("Até").fill("2000-01-01");
+  await page.keyboard.press("Escape");
+  await expect(box).toHaveValue("cargo:administrador ate:01/01/2000");
+  await expect(page.getByText("Nenhum usuário encontrado")).toBeVisible();
+
+  await page.getByRole("button", { name: "Limpar busca" }).click();
+  await expect(page.getByRole("row", { name: "Abrir Administrador" })).toBeVisible();
+});

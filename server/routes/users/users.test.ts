@@ -70,6 +70,29 @@ describe("GET /api/v1/users", () => {
     expect(inactive.data.map((u) => u.email)).toEqual([USER_EMAIL]);
   });
 
+  it("a busca aceita campo:valor, período e texto sem acento", async () => {
+    await createAna();
+    const emails = async (search: string) => {
+      const body = (await (
+        await get(`/api/v1/users?search=${encodeURIComponent(search)}`)
+      ).json()) as ListBody;
+      return body.data.map((u) => u.email);
+    };
+
+    expect(await emails("usuario")).toEqual([USER_EMAIL]);
+    expect(await emails("cargo:administrador")).toEqual([ADMIN_EMAIL]);
+    expect(await emails("cargo:user email:ana")).toEqual(["ana@local.test"]);
+    expect(await emails("ate:01/01/2000")).toEqual([]);
+
+    findUserByEmail(USER_EMAIL)!.active = false;
+    expect(await emails("status:inativo")).toEqual([USER_EMAIL]);
+    expect(await emails("status:ati")).toEqual([ADMIN_EMAIL, "ana@local.test"]);
+  });
+
+  it("busca com menos de 3 caracteres responde 422", async () => {
+    expect((await get("/api/v1/users?search=an")).status).toBe(422);
+  });
+
   it("pagina e ordena de forma decrescente", async () => {
     await createAna();
     const body = (await (

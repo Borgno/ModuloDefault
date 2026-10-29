@@ -1,7 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { ApiProblem } from "../../lib/problem";
-import { store, type RoleCode, type UserRecord } from "../../lib/memoryStore";
+import { ROLES, store, type RoleCode, type UserRecord } from "../../lib/memoryStore";
+import { inPeriod, matchesTerm, parseSearch, type SearchFilter } from "../../lib/search";
 import { recordAudit } from "../audit/audit.service";
+import { notifyUser } from "../notifications/notifications.service";
 import { generateTemporaryPassword, hashPassword, verifyPassword } from "../auth/password.service";
 import { paginate, sortBy } from "../pagination";
 
@@ -117,13 +119,34 @@ export type ListUsersQuery = {
   pageSize: number;
 };
 
+// Chaves de `campo:valor` da busca de usuários. `de:` e `ate:` (data de criação) valem em toda lista.
+export const USER_SEARCH_KEYS = ["nome", "email", "cargo", "status"] as const;
+
+const roleName = (role: RoleCode) => ROLES.find((r) => r.code === role)?.name ?? role;
+
+// O valor já chega normalizado. Cargo casa o código ou o nome ("adm", "administrador"); status casa
+// pelo começo, para "ati" não trazer os inativos.
+function matchesFilter(user: UserRecord, { key, value }: SearchFilter) {
+  switch (key) {
+    case "nome":
+      return matchesTerm(user.fullName, value);
+    case "email":
+      return matchesTerm(user.email, value);
+    case "cargo":
+      return matchesTerm(user.role, value) || matchesTerm(roleName(user.role), value);
+    case "status":
+      return (user.active ? "ativo" : "inativo").startsWith(value);
+    default:
+      return true;
+  }
+}
+
 export function listUsers(query: ListUsersQuery) {
-  const search = query.search?.trim().toLowerCase();
+  const { text, filters, period } = parseSearch(query.search, USER_SEARCH_KEYS);
   const filtered = [...store.users.values()]
-    .filter(
-      (user) =>
-        !search || user.fullName.toLowerCase().includes(search) || user.email.includes(search),
-    )
+    .filter((user) => !text || matchesTerm(`${user.fullName} ${user.email}`, text))
+    .filter((user) => filters.every((filter) => matchesFilter(user, filter)))
+    .filter((user) => inPeriod(user.createdAt, period))
     .filter((user) => !query.role || user.role === query.role)
     .filter((user) => query.active === undefined || user.active === query.active);
 
@@ -192,7 +215,9 @@ export function updateUser(
       data: { from, to: user.fullName },
     });
   }
-  if (patch.role !== undefined && patch.role !== user.role) {
+  const roleChanged = patch.role !== undefined && patch.role !== user.role;
+  const reactivated = patch.active === true && !user.active;
+  if (patch.role !== undefined && roleChanged) {
     const from = user.role;
     user.role = patch.role;
     recordAudit({
@@ -205,6 +230,8 @@ export function updateUser(
   }
   if (patch.active !== undefined && patch.active !== user.active) {
     user.active = patch.active;
+    // Desativar derruba as sessões: sem isso, reativar devolveria a vida aos cookies antigos.
+    if (!patch.active) user.sessionVersion += 1;
     recordAudit({
       actorId,
       action: patch.active ? "user.activated" : "user.deactivated",
@@ -214,6 +241,26 @@ export function updateUser(
   }
 
   user.updatedAt = new Date();
+
+  // Exemplo de uso das notificações: a pessoa fica sabendo do que um admin mudou na conta dela. Cada
+  // projeto chama o notifyUser dos próprios eventos.
+  if (id !== actorId && user.active && roleChanged) {
+    notifyUser(id, {
+      title: "Seu cargo mudou",
+      body: `Agora você é ${roleName(user.role)}.`,
+      url: "/profile",
+      senderName: store.users.get(actorId)?.fullName,
+    });
+  }
+  if (id !== actorId && reactivated) {
+    notifyUser(id, {
+      title: "Sua conta foi reativada",
+      body: "Você voltou a ter acesso.",
+      url: "/",
+      senderName: store.users.get(actorId)?.fullName,
+    });
+  }
+
   return toPublicUser(user);
 }
 
@@ -237,6 +284,7 @@ export function updateOwnProfile(userId: string, input: { fullName: string }) {
 }
 
 // Derruba as outras sessões do usuário. Quem trocou recebe um token novo (o handler reemite o cookie).
+// Devolve o sessionVersion novo.
 export async function changeOwnPassword(
   userId: string,
   input: { currentPassword: string; newPassword: string },
@@ -264,6 +312,7 @@ export async function changeOwnPassword(
     targetType: "user",
     targetId: userId,
   });
+  return user.sessionVersion;
 }
 
 // --- Números para o dashboard ------------------------------------------------------------------
