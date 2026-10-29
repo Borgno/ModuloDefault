@@ -1,6 +1,7 @@
 {
   "include": [
     "app/**/*",
+    "shared/**/*",
     "**/.server/**/*",
     "**/.client/**/*",
     ".react-router/types/**/*",
@@ -19,7 +20,8 @@
     "jsx": "react-jsx",
     "rootDirs": [".", "./.react-router/types"],
     "paths": {
-      "~/*": ["./app/*"]
+      "~/*": ["./app/*"],
+      "~shared/*": ["./shared/*"]
     },
     "esModuleInterop": true,
     "verbatimModuleSyntax": true,

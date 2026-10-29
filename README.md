@@ -37,7 +37,7 @@ Requisitos: Node.js 22.22 ou superior e bun 1.4.2 (fixado em `packageManager`).
 
 ```bash
 bun install
-cp .env.example .env   # preencha SESSION_SECRET (openssl rand -base64 48) e SEED_PASSWORD
+cp .env.example .env   # SESSION_SECRET (openssl rand -base64 48), SEED_PASSWORD e o par VAPID
 bun run dev            # front em http://localhost:3000, API em :3001
 ```
 
@@ -82,6 +82,7 @@ server/               # backend
 ├── services/         # regra de negócio e todo acesso a dados
 ├── middleware/       # sessão e role
 └── lib/              # store em memória, Problem Details, router
+shared/               # usado pelos dois lados: texto e preferências das notificações
 e2e/                  # testes do caminho do usuário
 docs/                 # patterns e design system
 ```
@@ -112,7 +113,7 @@ A arquitetura em uma frase de cada lado: no servidor, **só `services/` acessa d
 
 `Dockerfile` multi-stage: build com bun e Node, runtime `node:24-alpine` como usuário `node`, com
 `HEALTHCHECK` em `/api/health`. O `docker-compose.yml` é o do Dokploy: sem `ports:` publicadas, o
-domínio é cadastrado na aba Domains. Variáveis obrigatórias: `SESSION_SECRET` e `SEED_PASSWORD`.
+domínio é cadastrado na aba Domains. Variáveis obrigatórias: `SESSION_SECRET`, `SEED_PASSWORD`, `VAPID_PUBLIC_KEY` e `VAPID_PRIVATE_KEY` (`bunx web-push generate-vapid-keys`).
 
 Versão e CHANGELOG saem do release-please, a partir das mensagens de commit em Conventional Commits.
 
@@ -124,6 +125,19 @@ Versão e CHANGELOG saem do release-please, a partir das mensagens de commit em 
 4. Crie o secret `RELEASE_PLEASE_TOKEN` no repositório, para o PR de release rodar o CI.
 5. Apague ou adapte o que o projeto não usa. O domínio de usuários e a sessão ficam: o resto depende
    deles.
+
+## Notificações e conversas
+
+Qualquer módulo avisa um usuário com `notifyUser(userId, { title, body, url })`. O aviso aparece na
+tela Notificações e no contador da sidebar, põe `(N)` no título e no ícone da aba, e vira notificação
+do sistema: pela página aberta (só com a janela sem foco) ou por Web Push com o app fechado. O par
+VAPID do push vem do `.env` (`bunx web-push generate-vapid-keys`), obrigatório em produção. Avisos podem ser arquivados e silenciados por 8
+horas, 1 semana ou sempre.
+
+A tela Conversas é um chat entre os usuários, de duas pessoas ou em grupo, com não lidas, menção,
+resposta citada e reações. Cada pessoa marca como não lida, silencia e arquiva as próprias conversas,
+e configura no menu do perfil, separado para mensagens, grupos e avisos, se quer notificação, som e
+prévia. Detalhes em `CLAUDE.md`, seções Notificações e Conversas.
 
 ## Próxima etapa
 

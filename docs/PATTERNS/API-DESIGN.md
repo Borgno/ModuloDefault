@@ -83,20 +83,41 @@ item aceitam métodos diferentes. Célula vazia responde `405`.
 
 Rotas atuais, sob `/api/v1`:
 
-| Path                         | GET                                        | POST                   | PUT                | PATCH                      | DELETE       |
-| ---------------------------- | ------------------------------------------ | ---------------------- | ------------------ | -------------------------- | ------------ |
-| `/sessions`                  |                                            | login `201`            |                    |                            |              |
-| `/sessions/current`          |                                            |                        |                    |                            | logout `204` |
-| `/me`                        | usuário da sessão `200`                    |                        |                    | editar nome `200`          |              |
-| `/me/password`               |                                            |                        | trocar senha `204` |                            |              |
-| `/users`                     | listar `200`                               | criar `201`            |                    |                            |              |
-| `/users/{id}`                | ver `200`                                  |                        |                    | nome, role, `active` `200` |              |
-| `/users/{id}/passwordResets` |                                            | senha temporária `201` |                    |                            |              |
-| `/auditEvents`               | listar por `targetType` e `targetId` `200` |                        |                    |                            |              |
-| `/userStats`                 | números do dashboard `200`                 |                        |                    |                            |              |
+| Path                                                  | GET                                        | POST                   | PUT                | PATCH                            | DELETE         |
+| ----------------------------------------------------- | ------------------------------------------ | ---------------------- | ------------------ | -------------------------------- | -------------- |
+| `/sessions`                                           |                                            | login `201`            |                    |                                  |                |
+| `/sessions/current`                                   |                                            |                        |                    |                                  | logout `204`   |
+| `/me`                                                 | usuário da sessão `200`                    |                        |                    | editar nome `200`                |                |
+| `/me/password`                                        |                                            |                        | trocar senha `204` |                                  |                |
+| `/users`                                              | listar `200`                               | criar `201`            |                    |                                  |                |
+| `/users/{id}`                                         | ver `200`                                  |                        |                    | nome, role, `active` `200`       |                |
+| `/users/{id}/passwordResets`                          |                                            | senha temporária `201` |                    |                                  |                |
+| `/auditEvents`                                        | listar por `targetType` e `targetId` `200` |                        |                    |                                  |                |
+| `/userStats`                                          | números do dashboard `200`                 |                        |                    |                                  |                |
+| `/notifications`                                      | as do usuário, com `meta.unread` `200`     |                        |                    | todas lidas `204`                |                |
+| `/notifications/{id}`                                 |                                            |                        |                    | `read`, `archived` `200`         |                |
+| `/noticeMute`                                         | avisos silenciados `200`                   |                        | silenciar `200`    |                                  |                |
+| `/events`                                             | stream SSE `200`                           |                        |                    |                                  |                |
+| `/pushSubscriptions`                                  |                                            | inscrever `201`        |                    |                                  |                |
+| `/pushSubscriptions/{id}`                             |                                            |                        |                    |                                  | cancelar `204` |
+| `/pushKey`                                            | chave pública do Web Push `200`            |                        |                    |                                  |                |
+| `/conversations`                                      | as do usuário, com `filter` `200`          | abrir ou criar `201`   |                    |                                  |                |
+| `/conversations/{id}`                                 | a conversa `200`                           |                        |                    | `read`, `mute`, `archived` `200` |                |
+| `/conversations/{id}/messages`                        | em páginas para trás `200`                 | mandar `201`           |                    |                                  |                |
+| `/conversations/{id}/messages/{messageId}/myReaction` |                                            |                        | reagir `200`       |                                  | tirar `204`    |
+| `/contacts`                                           | pessoas para conversar `200`               |                        |                    |                                  |                |
 
 `DELETE /users/{id}` fica vazio de propósito: usuário é desativado, nunca apagado, para o histórico de
 audit não perder o autor. O reset de senha é um recurso criado (`POST`) sem endereço próprio, por isso
 responde `201` sem `Location`.
+
+`PATCH /notifications` só aceita `{ "read": true }`: marcar todas como lidas é uma alteração da
+coleção, não uma ação no path. `/events` é `text/event-stream` e fica aberto enquanto a aba
+está aberta. `/pushKey` e `/noticeMute` são recursos únicos do usuário.
+
+`POST /conversations` com uma pessoa que já tem conversa devolve a existente com `200`. As mensagens
+são a exceção à paginação por página: vêm da mais nova para trás, com `before` (a `seq` da mais antiga
+já carregada) e `meta.hasMore`, porque mensagem nova chegando mudaria o conteúdo de cada página.
+`myReaction` é a reação do usuário da sessão: uma por pessoa, então `PUT` põe ou troca e `DELETE` tira.
 
 O contrato completo, gerado das rotas, fica em `/api/v1/openapi.json`, e o Swagger em `/api/v1/docs`.

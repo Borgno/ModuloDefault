@@ -1,5 +1,5 @@
 import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
-import { Fragment, useId } from "react";
+import { createContext, Fragment, useContext, useId } from "react";
 import { Button } from "~/components/ui/button";
 import { Label } from "~/components/ui/label";
 import { Skeleton } from "~/components/ui/skeleton";
@@ -50,6 +50,8 @@ type DataTableProps<T> = {
   };
   onRowClick?: (row: T) => void;
   rowLabel?: (row: T) => string;
+  // Clique direito na linha (menu de ações dela).
+  onRowContextMenu?: (row: T) => void;
   empty: React.ComponentProps<typeof EmptyState>;
 };
 
@@ -120,6 +122,11 @@ function MobileSort<T>({
   );
 }
 
+// Onde a célula está: nos cards (celular) ou na tabela (desktop). As duas são montadas e só uma
+// aparece; um menu controlado pela página abre só na que está na tela.
+const VariantContext = createContext<"cards" | "table">("table");
+export const useDataTableVariant = () => useContext(VariantContext);
+
 // Padding das células: mais folga na primeira e na última coluna, alinhado com a barra de busca.
 const cellPadding = "px-4 first:pl-6 last:pr-6";
 
@@ -137,15 +144,27 @@ export function DataTable<T>({
   pagination,
   onRowClick,
   rowLabel,
+  onRowContextMenu,
   empty,
 }: DataTableProps<T>) {
   const showSkeleton = isLoading && !rows;
   const [titleColumn, ...detailColumns] = columns;
   const mobileColumns = detailColumns.filter((column) => !column.hideOnMobile);
 
+  const contextMenuProps = (row: T) =>
+    onRowContextMenu
+      ? {
+          onContextMenu: (event: React.MouseEvent) => {
+            event.preventDefault();
+            onRowContextMenu(row);
+          },
+        }
+      : {};
+
   // Linha e card abrem o item do mesmo jeito: clique, Enter ou espaço.
-  const rowProps = (row: T) =>
-    onRowClick
+  const rowProps = (row: T) => ({
+    ...contextMenuProps(row),
+    ...(onRowClick
       ? {
           onClick: () => onRowClick(row),
           onKeyDown: (event: React.KeyboardEvent) => {
@@ -157,7 +176,8 @@ export function DataTable<T>({
           tabIndex: 0,
           "aria-label": rowLabel?.(row),
         }
-      : {};
+      : {}),
+  });
   const totalPages = pagination
     ? Math.max(1, Math.ceil(pagination.total / pagination.pageSize))
     : 1;
@@ -175,42 +195,44 @@ export function DataTable<T>({
           {sort !== undefined && onSortChange && (
             <MobileSort columns={columns} sort={sort} onSortChange={onSortChange} />
           )}
-          <ul aria-label="Registros" className="divide-y md:hidden">
-            {showSkeleton
-              ? Array.from({ length: 3 }, (_, index) => (
-                  <li key={index} className="space-y-2 px-6 py-4">
-                    <Skeleton className="h-4 w-1/2" />
-                    <Skeleton className="h-3 w-3/4" />
-                  </li>
-                ))
-              : rows?.map((row) => (
-                  <li key={rowKey(row)}>
-                    <div
-                      {...rowProps(row)}
-                      role={onRowClick ? "button" : undefined}
-                      className={cn(
-                        "space-y-3 px-6 py-4",
-                        onRowClick &&
-                          "cursor-pointer transition-colors hover:bg-muted/50 focus-visible:bg-accent focus-visible:outline-none",
-                      )}
-                    >
-                      <div className="min-w-0">{titleColumn.cell(row)}</div>
-                      {mobileColumns.length > 0 && (
-                        <dl className="grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2">
-                          {mobileColumns.map((column) => (
-                            <Fragment key={column.key}>
-                              <dt className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
-                                {column.header}
-                              </dt>
-                              <dd className="min-w-0">{column.cell(row)}</dd>
-                            </Fragment>
-                          ))}
-                        </dl>
-                      )}
-                    </div>
-                  </li>
-                ))}
-          </ul>
+          <VariantContext value="cards">
+            <ul aria-label="Registros" className="divide-y md:hidden">
+              {showSkeleton
+                ? Array.from({ length: 3 }, (_, index) => (
+                    <li key={index} className="space-y-2 px-6 py-4">
+                      <Skeleton className="h-4 w-1/2" />
+                      <Skeleton className="h-3 w-3/4" />
+                    </li>
+                  ))
+                : rows?.map((row) => (
+                    <li key={rowKey(row)}>
+                      <div
+                        {...rowProps(row)}
+                        role={onRowClick ? "button" : undefined}
+                        className={cn(
+                          "space-y-3 px-6 py-4",
+                          onRowClick &&
+                            "cursor-pointer transition-colors hover:bg-muted/50 focus-visible:bg-accent focus-visible:outline-none",
+                        )}
+                      >
+                        <div className="min-w-0">{titleColumn.cell(row)}</div>
+                        {mobileColumns.length > 0 && (
+                          <dl className="grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2">
+                            {mobileColumns.map((column) => (
+                              <Fragment key={column.key}>
+                                <dt className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+                                  {column.header}
+                                </dt>
+                                <dd className="min-w-0">{column.cell(row)}</dd>
+                              </Fragment>
+                            ))}
+                          </dl>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+            </ul>
+          </VariantContext>
           <div className="hidden md:block">
             <Table>
               <TableHeader>

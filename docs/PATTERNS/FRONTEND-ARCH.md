@@ -46,6 +46,8 @@ app/
 ├── config/               # nome do app, navegação da sidebar
 ├── hooks/                # hooks transversais (useListParams, useDebouncedValue)
 ├── lib/                  # api.ts, auth.ts, queryClient.ts, theme.ts, format.ts, forms.ts
+│   ├── chat/             # queries do chat usadas fora da tela (contador, stream) e o foco no campo
+│   └── notifier/         # stream de notificações, Web Push, notificação do sistema, som, (N) da aba
 └── types/                # contrato da API repetido no front
 ```
 
