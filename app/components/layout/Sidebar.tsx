@@ -13,6 +13,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "~/components/ui/tooltip";
 import { APP_NAME } from "~/config/app";
 import { visibleNavigation, type NavItem, type NavSection } from "~/config/navigation";
+import { formatCounter, useNavCounter } from "~/hooks/useNavCounter";
 import { cn } from "~/lib/utils";
 import type { User } from "~/types/user";
 import { ProfileMenu } from "./ProfileMenu";
@@ -79,12 +80,14 @@ function SidebarLink({ item, collapsed }: { item: NavItem; collapsed: boolean })
   // dentro do TooltipTrigger (Slot do Radix), que mescla className como texto e quebraria a função.
   const active = isItemActive(item, pathname);
   const Icon = item.icon;
+  const { count, muted } = useNavCounter(item.counter);
+  const label = count > 0 ? `${item.label} (${formatCounter(count)})` : item.label;
   return (
-    <WithTooltip label={item.label} show={collapsed}>
+    <WithTooltip label={label} show={collapsed}>
       <NavLink
         to={item.to}
         end={item.end}
-        aria-label={collapsed ? item.label : undefined}
+        aria-label={collapsed || count > 0 ? label : undefined}
         className={cn(
           "group/item relative flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-xs font-bold transition-all duration-200 ease-ui",
           collapsed && "justify-center px-0",
@@ -93,10 +96,30 @@ function SidebarLink({ item, collapsed }: { item: NavItem; collapsed: boolean })
             : "text-muted-foreground hover:bg-accent hover:text-foreground",
         )}
       >
-        <IconBox active={active}>
-          <Icon size={14} />
-        </IconBox>
-        {!collapsed && <span>{item.label}</span>}
+        <span className="relative">
+          <IconBox active={active}>
+            <Icon size={14} />
+          </IconBox>
+          {collapsed && count > 0 && (
+            <span
+              className={cn(
+                "absolute -top-1 -right-1 size-2.5 rounded-full border-2 border-sidebar",
+                muted ? "bg-muted-foreground" : "bg-primary",
+              )}
+            />
+          )}
+        </span>
+        {!collapsed && <span className="flex-1">{item.label}</span>}
+        {!collapsed && count > 0 && (
+          <span
+            className={cn(
+              "rounded-full px-1.5 font-mono text-[10px] leading-4 text-primary-foreground",
+              muted ? "bg-muted-foreground" : "bg-primary",
+            )}
+          >
+            {formatCounter(count)}
+          </span>
+        )}
       </NavLink>
     </WithTooltip>
   );

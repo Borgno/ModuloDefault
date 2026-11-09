@@ -1,8 +1,14 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { Outlet, redirect, useLocation, useNavigate } from "react-router";
+import { Outlet, redirect, useLocation, useMatches, useNavigate } from "react-router";
 import { MobileNav } from "~/components/layout/MobileNav";
+import { NotificationBanner } from "~/components/layout/NotificationBanner";
+import {
+  leaveNotifications,
+  NotificationConnection,
+} from "~/components/layout/NotificationConnection";
 import { Sidebar, SIDEBAR_MODES, type SidebarMode } from "~/components/layout/Sidebar";
+import { SingleTabGate } from "~/components/layout/SingleTabGate";
 import { TopProgress } from "~/components/layout/TopProgress";
 import { isUnauthorized } from "~/lib/api";
 import { loginPath, logout, markSignedOut, meQuery, requireSessionUser } from "~/lib/auth";
@@ -83,6 +89,10 @@ export default function AppLayout({ loaderData }: Route.ComponentProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const loggingOut = useRef(false);
+  // Tela que ocupa toda a área (Conversas): sem o padding e a largura máxima das outras.
+  const fullBleed = useMatches().some(
+    (match) => (match.handle as { fullBleed?: boolean } | undefined)?.fullBleed,
+  );
 
   // A revalidação em segundo plano do /me devolveu "sem sessão": sai para o login guardando a volta.
   // No logout explícito, quem navega é o handleLogout, sem a volta.
@@ -92,14 +102,16 @@ export default function AppLayout({ loaderData }: Route.ComponentProps) {
 
   async function handleLogout() {
     loggingOut.current = true;
+    leaveNotifications();
     await logout();
     navigate("/login", { replace: true });
   }
 
   return (
-    <>
+    <SingleTabGate>
       <TopProgress />
-      <div className="flex h-screen w-screen overflow-hidden">
+      {user && <NotificationConnection user={user} />}
+      <div className="flex h-dvh w-screen overflow-hidden">
         {user && (
           <div className="hidden md:flex">
             <Sidebar
@@ -111,13 +123,24 @@ export default function AppLayout({ loaderData }: Route.ComponentProps) {
           </div>
         )}
         <main className="flex min-w-0 flex-1 flex-col overflow-y-auto">
-          {/* pb-24 no mobile: espaço para a barra de navegação inferior. */}
-          <div className="mx-auto w-full max-w-7xl p-4 pb-24 md:p-6">
-            <Outlet />
-          </div>
+          {fullBleed ? (
+            // pb-[...] no mobile: espaço para a barra de navegação inferior.
+            <div className="flex min-h-0 flex-1 flex-col pb-[72px] md:pb-0">
+              <NotificationBanner className="mb-0 rounded-none border-x-0 border-t-0" />
+              <div className="min-h-0 flex-1">
+                <Outlet />
+              </div>
+            </div>
+          ) : (
+            // pb-24 no mobile: espaço para a barra de navegação inferior.
+            <div className="mx-auto w-full max-w-7xl p-4 pb-24 md:p-6">
+              <NotificationBanner />
+              <Outlet />
+            </div>
+          )}
         </main>
         {user && <MobileNav user={user} onLogout={handleLogout} />}
       </div>
-    </>
+    </SingleTabGate>
   );
 }

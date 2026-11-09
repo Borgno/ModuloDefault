@@ -1,17 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { UserPlus, Users as UsersIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { PageHeader } from "~/components/layout/PageHeader";
 import { DataTable, type Column } from "~/components/patterns/DataTable";
 import { FilterButton, FilterField } from "~/components/patterns/FilterButton";
 import { SearchableSelect } from "~/components/patterns/SearchableSelect";
 import { Button } from "~/components/ui/button";
 import { APP_NAME } from "~/config/app";
-import { useDebouncedValue } from "~/hooks/useDebouncedValue";
 import { useListParams } from "~/hooks/useListParams";
+import { useListSearch } from "~/hooks/useListSearch";
 import { meQuery, requireRole } from "~/lib/auth";
 import { formatDateTime } from "~/lib/format";
 import { queryClient } from "~/lib/queryClient";
+import type { SearchKey } from "~/lib/search";
 import type { User } from "~/types/user";
 import type { Route } from "./+types/route";
 import { CreateUserDialog } from "./_components/CreateUserDialog";
@@ -58,12 +59,21 @@ const columns: Column<User>[] = [
     key: "createdAt",
     header: "Criado em",
     sortField: "createdAt",
+    hideOnMobile: true,
     cell: (user) => <span className="font-mono text-xs">{formatDateTime(user.createdAt)}</span>,
   },
 ];
 
 // Chaves da URL que são filtro da lista: dão o contador e o "Limpar filtros" do FilterButton.
 const FILTERS = ["role", "active"] as const;
+
+// Chaves de `campo:valor` da busca, as mesmas de USER_SEARCH_KEYS no servidor.
+const SEARCH_KEYS: SearchKey[] = [
+  { key: "nome", label: "Nome" },
+  { key: "email", label: "E-mail" },
+  { key: "cargo", label: "Cargo: admin ou usuário" },
+  { key: "status", label: "Status: ativo ou inativo" },
+];
 
 export default function UsersPage() {
   const { searchParams, set } = useListParams();
@@ -72,12 +82,7 @@ export default function UsersPage() {
   const { data: me } = useQuery(meQuery);
   const [creating, setCreating] = useState(false);
 
-  // Busca digitada vai para a URL depois de uma pausa, sem uma requisição por tecla.
-  const [searchInput, setSearchInput] = useState(params.search ?? "");
-  const debouncedSearch = useDebouncedValue(searchInput.trim());
-  useEffect(() => {
-    if (debouncedSearch !== (params.search ?? "")) set({ search: debouncedSearch });
-  }, [debouncedSearch, params.search, set]);
+  const search = useListSearch(params.search);
 
   const selectedId = searchParams.get("userId");
   const filtered = Boolean(params.search) || FILTERS.some((key) => searchParams.has(key));
@@ -97,9 +102,10 @@ export default function UsersPage() {
 
       <DataTable
         search={{
-          value: searchInput,
-          onChange: setSearchInput,
+          ...search,
           placeholder: "Buscar por nome ou e-mail",
+          keys: SEARCH_KEYS,
+          periodLabel: "Período de criação",
         }}
         filters={
           <FilterButton keys={FILTERS}>

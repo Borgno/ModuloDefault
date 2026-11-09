@@ -1,6 +1,8 @@
 import { createApp } from "../app";
 import { resetStore } from "../lib/memoryStore";
 import { resetLoginThrottle } from "../services/auth/loginThrottle.service";
+import { forgetSquelches } from "../services/notifications/push.service";
+import { closeAllStreams } from "../services/notifications/stream.service";
 import { seedUsers } from "../services/users/users.service";
 
 export const SEED_PASSWORD = "seed-password";
@@ -9,6 +11,8 @@ export const USER_EMAIL = "user@local.test";
 
 export async function setupApp() {
   resetStore();
+  closeAllStreams();
+  forgetSquelches();
   resetLoginThrottle();
   await seedUsers(SEED_PASSWORD);
   return createApp();

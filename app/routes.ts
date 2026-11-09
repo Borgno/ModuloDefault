@@ -8,6 +8,7 @@ export default [
   layout("routes/app-layout.tsx", [
     index("routes/dashboard/route.tsx"),
     route("users", "routes/users/route.tsx"),
+    route("chat", "routes/chat/route.tsx"),
     route("profile", "routes/profile.tsx"),
     route("*", "routes/not-found.tsx"),
   ]),

@@ -13,14 +13,16 @@ type RequireAuthOptions = {
 
 export function requireAuth(options: RequireAuthOptions = {}) {
   return createMiddleware<HonoEnv>(async (c, next) => {
-    const user = resolveSession(getCookie(c, SESSION_COOKIE));
-    if (!user) throw new ApiProblem(401, "UNAUTHENTICATED", "Sessão ausente ou expirada.");
+    const resolved = resolveSession(getCookie(c, SESSION_COOKIE));
+    if (!resolved) throw new ApiProblem(401, "UNAUTHENTICATED", "Sessão ausente ou expirada.");
+    const { user, session } = resolved;
 
     if (user.mustChangePassword && !options.allowPendingPasswordChange) {
       throw new ApiProblem(403, "PASSWORD_CHANGE_REQUIRED", "Troque a senha antes de continuar.");
     }
 
     c.set("user", user);
+    c.set("session", session);
     await next();
   });
 }

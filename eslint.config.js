@@ -39,6 +39,25 @@ export default defineConfig([
     },
   },
 
+  // Código usado pelos dois lados: não importa a página nem o servidor.
+  {
+    files: ["shared/**/*.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["~/*", "**/app/**", "**/server/**"],
+              message:
+                "ARCHITECTURE_VIOLATION: shared/ é usado pelos dois lados e não importa nenhum deles.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+
   // Backend: Node
   {
     files: ["server/**/*.ts"],

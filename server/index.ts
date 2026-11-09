@@ -1,6 +1,7 @@
 import { serve } from "@hono/node-server";
 import { env, listenPort } from "./env";
 import { createApp } from "./app";
+import { closeAllStreams } from "./services/notifications/stream.service";
 import { seedUsers } from "./services/users/users.service";
 
 // Dados em memória: o seed roda em todo start.
@@ -42,4 +43,5 @@ const server = serve({ fetch: app.fetch, port: listenPort }, (info) => banner(in
 // O Docker manda SIGTERM ao parar o container: fecha as conexões antes de sair.
 process.on("SIGTERM", () => {
   server.close(() => process.exit(0));
+  closeAllStreams();
 });

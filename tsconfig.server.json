@@ -1,5 +1,5 @@
 {
-  "include": ["server/**/*"],
+  "include": ["server/**/*", "shared/**/*"],
   "compilerOptions": {
     "lib": ["ES2023"],
     "types": ["node"],

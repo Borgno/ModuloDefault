@@ -1,4 +1,5 @@
-import { LogOut, Moon, User as UserIcon } from "lucide-react";
+import { Bell, LogOut, Moon, User as UserIcon } from "lucide-react";
+import { useState } from "react";
 import { Link } from "react-router";
 import {
   DropdownMenu,
@@ -12,6 +13,7 @@ import { ROLE_LABELS } from "~/lib/labels";
 import { useTheme } from "~/lib/theme";
 import { cn } from "~/lib/utils";
 import type { User } from "~/types/user";
+import { NotificationSettingsDialog } from "./NotificationSettingsDialog";
 
 type ProfileMenuProps = {
   user: User;
@@ -53,46 +55,64 @@ export function ProfileMenu({
 }: ProfileMenuProps) {
   const { theme, toggleTheme } = useTheme();
   const dark = theme === "dark";
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   return (
-    <DropdownMenu onOpenChange={onOpenChange}>
-      <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
-      <DropdownMenuContent side={side} align={align} className="w-64 p-1.5">
-        <DropdownMenuLabel className="mb-1 rounded-lg bg-muted px-3 py-2.5 font-normal">
-          <p className="truncate text-sm font-bold text-foreground">{user.fullName}</p>
-          <p className="text-xs text-muted-foreground">{ROLE_LABELS[user.role]}</p>
-          <p className="truncate font-inter text-xs text-dim">{user.email}</p>
-        </DropdownMenuLabel>
-
-        {/* Trocar o tema não fecha o menu: dá para ver o resultado e voltar. */}
-        <DropdownMenuItem
-          role="menuitemcheckbox"
-          aria-checked={dark}
-          onSelect={(event) => {
-            event.preventDefault();
-            toggleTheme();
-          }}
-          className="gap-2.5 px-3 py-2"
+    <>
+      <DropdownMenu onOpenChange={onOpenChange}>
+        <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
+        <DropdownMenuContent
+          side={side}
+          align={align}
+          className="w-64 p-1.5"
+          // Notificações abre uma janela: o foco fica nela, e não volta para o gatilho do menu.
+          onCloseAutoFocus={(event) => notificationsOpen && event.preventDefault()}
         >
-          <Moon className="text-primary" />
-          Tema escuro
-          <SwitchIndicator checked={dark} />
-        </DropdownMenuItem>
+          <DropdownMenuLabel className="mb-1 rounded-lg bg-muted px-3 py-2.5 font-normal">
+            <p className="truncate text-sm font-bold text-foreground">{user.fullName}</p>
+            <p className="text-xs text-muted-foreground">{ROLE_LABELS[user.role]}</p>
+            <p className="truncate font-inter text-xs text-dim">{user.email}</p>
+          </DropdownMenuLabel>
 
-        <DropdownMenuItem asChild className="gap-2.5 px-3 py-2">
-          <Link to="/profile">
-            <UserIcon />
-            Meu perfil
-          </Link>
-        </DropdownMenuItem>
+          {/* Trocar o tema não fecha o menu: dá para ver o resultado e voltar. */}
+          <DropdownMenuItem
+            role="menuitemcheckbox"
+            aria-checked={dark}
+            onSelect={(event) => {
+              event.preventDefault();
+              toggleTheme();
+            }}
+            className="gap-2.5 px-3 py-2"
+          >
+            <Moon className="text-primary" />
+            Tema escuro
+            <SwitchIndicator checked={dark} />
+          </DropdownMenuItem>
 
-        <DropdownMenuSeparator />
+          <DropdownMenuItem asChild className="gap-2.5 px-3 py-2">
+            <Link to="/profile">
+              <UserIcon />
+              Meu perfil
+            </Link>
+          </DropdownMenuItem>
 
-        <DropdownMenuItem variant="destructive" onSelect={onLogout} className="gap-2.5 px-3 py-2">
-          <LogOut />
-          Sair
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+          <DropdownMenuItem
+            onSelect={() => setNotificationsOpen(true)}
+            className="gap-2.5 px-3 py-2"
+          >
+            <Bell />
+            Notificações
+          </DropdownMenuItem>
+
+          <DropdownMenuSeparator />
+
+          <DropdownMenuItem variant="destructive" onSelect={onLogout} className="gap-2.5 px-3 py-2">
+            <LogOut />
+            Sair
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <NotificationSettingsDialog open={notificationsOpen} onOpenChange={setNotificationsOpen} />
+    </>
   );
 }

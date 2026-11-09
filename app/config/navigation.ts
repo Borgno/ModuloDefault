@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, MessageCircle, Users, type LucideIcon } from "lucide-react";
 import type { Role } from "~/types/user";
 
 export type NavItem = {
@@ -9,6 +9,8 @@ export type NavItem = {
   end?: boolean;
   // Sem roles, todo usuário vê. Esconder o item é só conforto: o backend é quem barra.
   roles?: Role[];
+  // Contador ao lado do item: conversas com mensagem não lida. As notificações ficam no sininho do topo.
+  counter?: "unreadConversations";
 };
 
 export type NavSection = { title: string; items: NavItem[] };
@@ -17,7 +19,10 @@ export type NavSection = { title: string; items: NavItem[] };
 export const NAVIGATION: NavSection[] = [
   {
     title: "Principal",
-    items: [{ to: "/", label: "Dashboard", icon: LayoutDashboard, end: true }],
+    items: [
+      { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
+      { to: "/chat", label: "Conversas", icon: MessageCircle, counter: "unreadConversations" },
+    ],
   },
   {
     title: "Administração",

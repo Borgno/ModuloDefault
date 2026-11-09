@@ -4,7 +4,7 @@ import { APP_NAME } from "~/config/app";
 // Moldura das telas fora do app (login, troca obrigatória de senha).
 export function AuthCard({ subtitle, children }: { subtitle: string; children: React.ReactNode }) {
   return (
-    <div className="h-screen w-full overflow-y-auto bg-background selection:bg-primary/30">
+    <div className="h-dvh w-full overflow-y-auto bg-background selection:bg-primary/30">
       <div className="relative flex min-h-full w-full items-center justify-center overflow-hidden p-6">
         <div className="pointer-events-none absolute top-[-10%] left-[-10%] h-[40%] w-[40%] rounded-full bg-primary/5 blur-[120px]" />
 

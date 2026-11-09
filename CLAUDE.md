@@ -67,16 +67,68 @@ Gates antes de dar uma tarefa por concluída: `lint`, `lint:api`, `format:check`
 - Sem banco nesta etapa: `server/lib/memoryStore.ts` guarda os dados em memória, e o start recria os
   usuários do seed (`SEED_PASSWORD`). Só `server/services/` importa o store. Quando o banco entrar, a
   troca fica nos services.
-- Sessão: cookie `session` HttpOnly com `{ sub, ver, exp }` assinado por HMAC (`SESSION_SECRET`). O
+- Sessão: cookie `session` HttpOnly com `{ sub, sid, ver, exp }` assinado por HMAC (`SESSION_SECRET`). O
   `requireAuth` (`server/middleware/auth.ts`) relê o usuário a cada request, então role e status valem
   na hora. Rotas de admin usam `requireAuth()` seguido de `requireRole("admin")`.
-- `ver` é o `sessionVersion` do usuário. Reset de senha e troca da própria senha incrementam, o que
-  derruba as sessões abertas; na troca própria, o handler reemite o cookie para quem trocou.
+- `ver` é o `sessionVersion` do usuário. Reset de senha, troca da própria senha e desativação
+  incrementam, o que derruba as sessões abertas; na troca própria, o handler reemite o cookie da mesma
+  sessão para quem trocou. `sid` identifica o login: o que fica preso a ele (a inscrição de Web Push) é
+  apagado no logout. Cookie sem `sid`, emitido antes dele existir, continua valendo, com o id da sessão
+  tirado do hash do token.
 - Usuário nunca é apagado, só desativado (`active: false`): o audit precisa do autor.
 - Toda mudança que um admin precise rastrear grava `recordAudit()` no service.
 - Usuário com `mustChangePassword` só acessa `GET /me` e `PUT /me/password`; o resto responde `403`
   `PASSWORD_CHANGE_REQUIRED`.
 - Erros de contrato de uma rota são declarados com `...problemResponses(401, 422)`.
+
+### Notificações
+
+- Outro módulo avisa alguém com `notifyUser(userId, { title, body, url, senderName, important })`
+  (`server/services/notifications/notifications.service.ts`). O exemplo do template está no
+  `updateUser`: cargo mudado e conta reativada por um admin. `senderName` é o que a notificação mostra
+  com a prévia desligada; `important` avisa mesmo com os avisos silenciados.
+- O aviso fica no store (tela `/notifications`, contador na sidebar e `(N)` na aba) e chega por dois
+  caminhos: as abas abertas pelo stream SSE de `GET /events`, e os navegadores sem o app
+  aberto por Web Push (`public/sw.js`). O par VAPID vem do `.env` (`VAPID_PUBLIC_KEY`,
+  `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`), obrigatório em produção; em dev, sem ele, um par é gerado a
+  cada start e os navegadores se inscrevem de novo ao abrir o app.
+- Cada usuário arquiva avisos (saem da lista e do contador) e silencia os avisos por 8 horas, 1 semana
+  ou sempre (`PUT /noticeMute`): silenciados chegam na lista, sem notificação nem som, e o contador
+  fica cinza. O menu de cada aviso abre pela seta ou pelo clique direito.
+- Avisos em sequência e grupo agitado: depois de avisar, 15 s sem notificação nem som daquele tipo
+  (`SQUELCH_MS`, igual na página e no push). Conversa de duas pessoas avisa toda mensagem.
+- Texto e preferências da notificação ficam em `shared/` (`notificationText.ts`,
+  `notificationPreferences.ts`), importados pela página (`~shared/...`) e pelo servidor. `shared/` não
+  importa `app/` nem `server/` (regra do ESLint). As regras: "Fulano: texto" em grupo, "Mencionou você:",
+  "Respondeu a você:", "Fulano reagiu ❤️ a: …" e, sem prévia, "N novas mensagens", "Mensagem de
+  Fulano" ou "Notificação de Fulano".
+- As abas abertas ficam na memória do processo (`stream.service.ts`). Com mais de um processo, o
+  evento precisa de um canal entre eles (Redis, LISTEN/NOTIFY) antes de escalar.
+- No front, `NotificationConnection` (montado pelo layout) cuida do stream, da notificação do sistema
+  (só com a janela sem foco), do som, da inscrição de push, do cache do chat e do `(N)`, que soma os
+  avisos não silenciados e as conversas não lidas. As configurações ficam no `localStorage` de cada
+  usuário, separadas para mensagens, grupos e avisos, e vão junto com a inscrição de push.
+- `SINGLE_TAB` (`app/config/app.ts`) deixa uma aba do app por navegador, com "Usar aqui" na segunda.
+
+### Conversas
+
+- Chat entre os usuários do app, de duas pessoas ou em grupo (`server/services/chat/chat.service.ts`,
+  rotas `/conversations` e `/contacts`, tela `app/routes/chat/`). Conversa de duas pessoas é uma só:
+  pedir de novo devolve a que existe.
+- Não lidas, "marcar como não lida" (só a bolinha), silenciar e arquivar são de cada pessoa
+  (`MemberStateRecord`) e valem só para ela. Responder lê a conversa só para quem respondeu. Arquivada
+  só volta ao desarquivar.
+- Silenciada ou arquivada só avisa a mensagem dirigida à pessoa: menção a ela, `@todos` ou resposta a
+  uma mensagem dela. Reação de outra pessoa a uma mensagem sua avisa e vira a prévia, mas não fura
+  silêncio nem arquivo. O `(N)` conta conversas com mensagem não lida, fora as arquivadas e as
+  silenciadas sem menção.
+- A conversa aberta (`ConversationView`) só é lida com a janela em foco há 2,5 s e a rolagem no fim, e
+  só até a última mensagem que estava na tela (`readUntil`, que nunca volta atrás); aberta sem foco,
+  espera o primeiro clique ou tecla. Abre na faixa "N mensagens não lidas", buscando páginas
+  antigas se preciso, e a faixa fica até sair ou mandar mensagem. Só a própria mensagem rola até o fim.
+  Esc cancela a citação e depois fecha a conversa.
+- As mensagens ficam no cache do TanStack Query por conversa (`app/lib/chat/chat.queries.ts`); o
+  stream acrescenta as novas, e voltar à conversa mantém as páginas antigas já carregadas.
 
 ### Frontend: sessão e dados
 

@@ -1,4 +1,4 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type Browser, type Page } from "@playwright/test";
 
 export const PASSWORD = "e2e-password";
 export const ADMIN = { email: "admin@local.test", password: PASSWORD };
@@ -50,4 +50,47 @@ export async function logout(page: Page) {
 export async function goToProfile(page: Page) {
   await openProfileMenu(page);
   await page.getByRole("menuitem", { name: "Meu perfil" }).click();
+}
+
+// O navegador do teste não mostra notificação do sistema. Este script troca a Notification por uma
+// que só registra o que seria mostrado, já com a permissão dada, e faz a janela parecer sem foco
+// (com foco o app não notifica, como no WhatsApp Web).
+export const FAKE_NOTIFICATIONS = `
+  window.__shown = [];
+  class FakeNotification {
+    static permission = "granted";
+    static requestPermission = async () => "granted";
+    constructor(title, options) {
+      this.title = title;
+      this.options = options;
+      window.__shown.push(this);
+    }
+    close() {}
+  }
+  window.Notification = FakeNotification;
+  document.hasFocus = () => false;
+`;
+
+type Shown = { title: string; body: string; tag: string };
+export const shownNotifications = (page: Page) =>
+  page.evaluate(() =>
+    (
+      window as unknown as { __shown: { title: string; options: { body: string; tag: string } }[] }
+    ).__shown.map((n) => ({ title: n.title, body: n.options.body, tag: n.options.tag })),
+  ) as Promise<Shown[]>;
+
+// Pessoa nova, já com a senha inicial trocada, num navegador próprio.
+export async function newPerson(browser: Browser, admin: Page, name: string, fake = true) {
+  const email = uniqueEmail(name.toLowerCase().replace(/\W/g, ""));
+  await createUser(admin, { fullName: name, email, password: "inicial-123" });
+  const context = await browser.newContext();
+  if (fake) await context.addInitScript(FAKE_NOTIFICATIONS);
+  const page = await context.newPage();
+  await login(page, email, "inicial-123");
+  await page.getByLabel("Senha atual").fill("inicial-123");
+  await page.getByLabel("Nova senha", { exact: true }).fill("nova-senha-123");
+  await page.getByLabel("Confirme a nova senha").fill("nova-senha-123");
+  await page.getByRole("button", { name: "Salvar nova senha" }).click();
+  await expect(page).toHaveURL("/");
+  return { context, page };
 }
