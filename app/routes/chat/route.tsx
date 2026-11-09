@@ -1,3 +1,4 @@
+import { NotificationBell } from "~/components/layout/NotificationBell";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { MessageCircle } from "lucide-react";
 import { useCallback, useState } from "react";
@@ -76,7 +77,10 @@ export default function ChatPage() {
           onClose={close}
         />
       ) : (
-        <div className="hidden flex-1 flex-col items-center justify-center gap-2 bg-muted/30 text-center md:flex">
+        <div className="relative hidden flex-1 flex-col items-center justify-center gap-2 bg-muted/30 text-center md:flex">
+          <div className="absolute top-3 right-4">
+            <NotificationBell />
+          </div>
           <MessageCircle size={32} className="text-muted-foreground" />
           <p className="text-sm font-bold">Escolha uma conversa</p>
           <p className="max-w-xs font-inter text-xs text-muted-foreground">

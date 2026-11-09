@@ -79,7 +79,7 @@ test("notificação com a janela sem foco; o clique abre a conversa com o cursor
   await loginAsAdmin(admin);
   person = await newPerson(browser, admin, "Bruno Clique");
   const { page } = person;
-  await page.goto("/notifications");
+  await page.goto("/");
 
   await startChat(admin, "Bruno Clique");
   await send(admin, "pode ver o relatório?");
@@ -98,7 +98,7 @@ test("grupo: Fulano e o texto, e um aviso a cada intervalo", async ({ page: admi
   await loginAsAdmin(admin);
   person = await newPerson(browser, admin, "Carla Grupo");
   const { page } = person;
-  await page.goto("/notifications");
+  await page.goto("/");
 
   await startGroup(admin, "Equipe Carla", ["Carla Grupo"]);
   await send(admin, "bom dia");
@@ -124,7 +124,7 @@ test("silenciada só avisa a menção, com Mencionou você", async ({ page: admi
   await page.getByRole("menuitem", { name: "Silenciar" }).click();
   await page.getByRole("menuitem", { name: "Sempre" }).click();
   await expect(conversationItem(page, "Equipe Davi")).toHaveAccessibleName(/silenciada/);
-  await page.goto("/notifications");
+  await page.goto("/");
   await page.evaluate(() => ((window as unknown as { __shown: unknown[] }).__shown.length = 0));
 
   await send(admin, "sem menção");
@@ -225,7 +225,7 @@ test("reação a uma mensagem sua avisa e vira a prévia", async ({ page: admin,
   const { page } = person;
   await startChat(page, "Administrador");
   await send(page, "relatório pronto");
-  await page.goto("/notifications");
+  await page.goto("/");
 
   await admin.goto("/chat");
   await conversationItem(admin, "Hugo Reacao").click();
@@ -277,7 +277,7 @@ test("configurações separadas: grupos desligados não avisam, mensagens sim", 
   await page.getByRole("menuitem", { name: "Notificações" }).click();
   await page.getByRole("switch", { name: "Mostrar notificações de grupos" }).click();
   await page.keyboard.press("Escape");
-  await page.goto("/notifications");
+  await page.goto("/");
 
   await startGroup(admin, "Equipe Julia", ["Julia Config"]);
   await send(admin, "no grupo");

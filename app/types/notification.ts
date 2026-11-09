@@ -39,4 +39,8 @@ export {
   type KindPreferences,
   type NotificationKind,
   type NotificationPreferences,
+  type NotificationSound,
+  isMuted,
+  NOTIFICATION_SOUNDS,
+  soundOn,
 } from "~shared/notificationPreferences";

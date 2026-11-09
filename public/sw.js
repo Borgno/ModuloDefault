@@ -38,7 +38,7 @@ self.addEventListener("notificationclick", (event) => {
         if (id) client.postMessage({ type: "abrir-notificacao", id, url, kind });
         return;
       }
-      const target = new URL(url || "/notifications", self.location.origin);
+      const target = new URL(url || "/", self.location.origin);
       if (id) target.searchParams.set("notificacao", id);
       await self.clients.openWindow(target.pathname + target.search);
     })(),

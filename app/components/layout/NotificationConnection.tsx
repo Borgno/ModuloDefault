@@ -38,7 +38,7 @@ import {
   showSystemNotification,
 } from "~/lib/notifier/systemNotifications";
 import type { Conversation, Message } from "~/types/chat";
-import type { AppNotification, NotificationKind } from "~/types/notification";
+import { soundOn, type AppNotification, type NotificationKind } from "~/types/notification";
 import type { User } from "~/types/user";
 import {
   messageNotification,
@@ -64,11 +64,12 @@ function alert(
   options: { body: string; tag: string; url: string | null; onClick: () => void },
 ) {
   const { prefs, permission } = getNotifierState();
-  const ownSound = prefs[kind].sound && canPlaySound();
+  const sound = soundOn(prefs, kind);
+  const ownSound = sound && canPlaySound();
   if (prefs[kind].show && permission === "granted") {
-    showSystemNotification(title, { ...options, systemSound: prefs[kind].sound && !ownSound });
+    showSystemNotification(title, { ...options, systemSound: sound && !ownSound });
   }
-  if (ownSound) playIncoming();
+  if (ownSound) playIncoming(prefs.sound, prefs.volume);
 }
 
 // Stream de eventos, notificações do sistema, som, Web Push e o "(N)" da aba, enquanto há sessão e
@@ -96,7 +97,8 @@ export function NotificationConnection({ user }: { user: User }) {
   // push) para qualquer tela.
   const openNoticeRef = useRef((id: string, url: string | null) => {
     window.focus();
-    navigateRef.current(url ?? "/notifications");
+    // Sem caminho, fica na tela atual: a notificação está no sininho do topo.
+    if (url) navigateRef.current(url);
     void api.patch(`/notifications/${id}`, { read: true }).catch(() => {});
   });
   // Abre a conversa com o cursor no campo, de qualquer tela.

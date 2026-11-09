@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Archive, ArrowLeft, MessageCirclePlus, Search } from "lucide-react";
 import { useState } from "react";
+import { NotificationBell } from "~/components/layout/NotificationBell";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Skeleton } from "~/components/ui/skeleton";
@@ -53,9 +54,16 @@ export function ConversationList({
         ) : (
           <h1 className="text-lg font-bold tracking-tight">Conversas</h1>
         )}
-        <Button variant="ghost" size="icon-sm" aria-label="Nova conversa" onClick={onNew}>
-          <MessageCirclePlus />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon-sm" aria-label="Nova conversa" onClick={onNew}>
+            <MessageCirclePlus />
+          </Button>
+          {/* No celular a lista ocupa a tela: o sininho fica no canto dela. No desktop ele vai para o
+              canto direito, no painel da conversa. */}
+          <div className="md:hidden">
+            <NotificationBell size="icon-sm" />
+          </div>
+        </div>
       </div>
 
       <div className="space-y-3 px-4 pb-3">

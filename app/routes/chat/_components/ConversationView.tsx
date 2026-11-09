@@ -1,3 +1,4 @@
+import { NotificationBell } from "~/components/layout/NotificationBell";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { ArrowDown, ArrowLeft, AtSign, BellOff, ChevronDown } from "lucide-react";
 import {
@@ -340,6 +341,7 @@ export function ConversationView({
           </DropdownMenuTrigger>
           <ConversationMenuContent conversation={conversation} onMarkedUnread={onHold} />
         </DropdownMenu>
+        <NotificationBell size="icon-sm" />
       </header>
 
       <div className="relative min-h-0 flex-1">

@@ -13,9 +13,20 @@ export type KindPreferences = {
   sound: boolean;
 };
 
+// Sons gerados no navegador (app/lib/notifier/sounds.ts), sem arquivo nem site externo.
+export const NOTIFICATION_SOUNDS = ["padrao", "sino", "chime", "pop"] as const;
+export type NotificationSound = (typeof NOTIFICATION_SOUNDS)[number];
+
 export type NotificationPreferences = Record<NotificationKind, KindPreferences> & {
   // Desligado, a notificação não mostra o texto: só quantas há, ou de quem é.
   previews: boolean;
+  // Silencia o som de todos os tipos, inclusive o do sistema. As notificações continuam.
+  muted: boolean;
+  // Fim do silêncio temporário, em ms desde 1970. Null com `muted`: até a pessoa desligar.
+  mutedUntil: number | null;
+  sound: NotificationSound;
+  // De 0 a 1.
+  volume: number;
 };
 
 export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
@@ -23,7 +34,20 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   messages: { show: true, sound: true },
   groups: { show: true, sound: true },
   previews: true,
+  muted: false,
+  mutedUntil: null,
+  sound: "padrao",
+  volume: 0.5,
 };
+
+// Silêncio valendo agora. O temporário vencido conta como desligado, sem precisar regravar.
+export function isMuted(prefs: NotificationPreferences, now = Date.now()) {
+  return prefs.muted && (prefs.mutedUntil === null || now < prefs.mutedUntil);
+}
+
+// Som de um tipo de aviso: ligado no tipo e sem silêncio.
+export const soundOn = (prefs: NotificationPreferences, kind: NotificationKind) =>
+  prefs[kind].sound && !isMuted(prefs);
 
 const pickBoolean = (value: unknown, fallback: boolean) =>
   typeof value === "boolean" ? value : fallback;
@@ -48,5 +72,17 @@ export function normalizeNotificationPreferences(raw: unknown): NotificationPref
     messages: kind("messages"),
     groups: kind("groups"),
     previews: pickBoolean(source.previews, d.previews),
+    muted: pickBoolean(source.muted, d.muted),
+    mutedUntil:
+      typeof source.mutedUntil === "number" && Number.isFinite(source.mutedUntil)
+        ? source.mutedUntil
+        : null,
+    sound: NOTIFICATION_SOUNDS.includes(source.sound as NotificationSound)
+      ? (source.sound as NotificationSound)
+      : d.sound,
+    volume:
+      typeof source.volume === "number" && Number.isFinite(source.volume)
+        ? Math.min(1, Math.max(0, source.volume))
+        : d.volume,
   };
 }

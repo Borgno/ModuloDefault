@@ -1,7 +1,9 @@
+import { NotificationBell } from "./NotificationBell";
+
 type PageHeaderProps = {
   title: string;
   description?: string;
-  // Botões da tela (criar, exportar), alinhados à direita.
+  // Botões da tela (criar, exportar), alinhados à direita, antes do sininho.
   actions?: React.ReactNode;
 };
 
@@ -14,7 +16,11 @@ export function PageHeader({ title, description, actions }: PageHeaderProps) {
           <p className="mt-1 font-inter text-sm text-muted-foreground">{description}</p>
         )}
       </div>
-      {actions && <div className="flex items-center gap-2">{actions}</div>}
+      {/* O sininho fica em todas as telas, depois dos botões da tela. */}
+      <div className="flex items-center gap-2">
+        {actions}
+        <NotificationBell />
+      </div>
     </header>
   );
 }

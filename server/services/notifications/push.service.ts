@@ -6,6 +6,7 @@ import { ApiProblem } from "../../lib/problem";
 import type { Session } from "../auth/session.service";
 import {
   normalizeNotificationPreferences,
+  soundOn,
   type NotificationKind,
   type NotificationPreferences,
 } from "../../../shared/notificationPreferences";
@@ -181,7 +182,7 @@ export async function pushToClosedBrowsers(
       if (!prefs[kind].show) return;
       const payload = build(prefs);
       if (!payload) return;
-      return send(subscription, { ...payload, silent: !prefs[kind].sound });
+      return send(subscription, { ...payload, silent: !soundOn(prefs, kind) });
     }),
   );
 }

@@ -24,12 +24,12 @@ test("cargo trocado por um admin chega na hora: contador, título, notificação
   await loginAsAdmin(admin);
   person = await newPerson(browser, admin, "Elisa Aviso");
   const { page } = person;
-  await expect(page.getByRole("link", { name: "Notificações", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Notificações", exact: true })).toBeVisible();
 
   await changeRole(admin, "Elisa Aviso", "Administrador");
 
   // Sem recarregar: o stream traz a notificação.
-  await expect(page.getByRole("link", { name: "Notificações (1)" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Notificações (1)" })).toBeVisible();
   await expect(page).toHaveTitle(/^\(1\) /);
   await expect
     .poll(() => shownNotifications(page))
@@ -42,7 +42,7 @@ test("cargo trocado por um admin chega na hora: contador, título, notificação
     (window as unknown as { __shown: { onclick: () => void }[] }).__shown[0].onclick(),
   );
   await expect(page).toHaveURL("/profile");
-  await expect(page.getByRole("link", { name: "Notificações", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Notificações", exact: true })).toBeVisible();
   await expect(page).not.toHaveTitle(/^\(/);
 });
 
@@ -78,7 +78,46 @@ test("sem prévia, a notificação diz só de quem é; a configuração fica no 
     ]);
 });
 
-test("tela de Notificações: lista, marca como não lida e marca todas como lidas", async ({
+test("silêncio temporário, som e volume ficam no navegador; silenciado, a notificação continua", async ({
+  page: admin,
+  browser,
+}) => {
+  await loginAsAdmin(admin);
+  person = await newPerson(browser, admin, "Gilda Silencio");
+  const { page } = person;
+
+  const dialog = page.getByRole("dialog", { name: "Notificações" });
+  const openSettings = async () => {
+    await openProfileMenu(page);
+    await page.getByRole("menuitem", { name: "Notificações" }).click();
+  };
+  await openSettings();
+  await dialog.getByRole("combobox", { name: "Silêncio temporário" }).click();
+  await page.getByRole("option", { name: "1 hora" }).click();
+  await dialog.getByRole("combobox", { name: "Som" }).click();
+  await page.getByRole("option", { name: "Sino" }).click();
+  await dialog.getByRole("slider", { name: "Volume" }).focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(dialog.getByRole("switch", { name: "Silenciar notificações" })).toBeChecked();
+  await expect(dialog.getByText(/^Silenciado até /)).toBeVisible();
+  await page.keyboard.press("Escape");
+
+  await page.reload();
+  await openSettings();
+  await expect(dialog.getByRole("switch", { name: "Silenciar notificações" })).toBeChecked();
+  await expect(dialog.getByRole("combobox", { name: "Som" })).toHaveText("Sino");
+  await expect(dialog.getByText("60%")).toBeVisible();
+  await page.keyboard.press("Escape");
+
+  await changeRole(admin, "Gilda Silencio", "Administrador");
+  await expect.poll(() => shownNotifications(page)).toHaveLength(1);
+
+  await openSettings();
+  await dialog.getByRole("switch", { name: "Silenciar notificações" }).click();
+  await expect(dialog.getByRole("switch", { name: "Silenciar notificações" })).not.toBeChecked();
+});
+
+test("sininho: painel com as notificações, marca como não lida e marca todas como lidas", async ({
   page: admin,
   browser,
 }) => {
@@ -87,27 +126,32 @@ test("tela de Notificações: lista, marca como não lida e marca todas como lid
   const { page } = person;
   await changeRole(admin, "Gabi Lista", "Administrador");
   await changeRole(admin, "Gabi Lista", "Usuário");
-  await expect(page.getByRole("link", { name: "Notificações (2)" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Notificações (2)" })).toBeVisible();
 
-  await page.getByRole("link", { name: "Notificações (2)" }).click();
-  await expect(page.getByRole("heading", { name: "Notificações" })).toBeVisible();
-  await expect(page.getByRole("row", { name: /Agora você é Usuário/ })).toBeVisible();
+  await page.getByRole("button", { name: "Notificações (2)" }).click();
+  const panel = page.getByRole("dialog", { name: "Painel de notificações" });
+  await expect(panel.getByRole("button", { name: /Agora você é Usuário/ })).toBeVisible();
 
-  await page.getByRole("button", { name: "Marcar todas como lidas" }).click();
-  await expect(page.getByRole("link", { name: "Notificações", exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Marcar todas como lidas" })).toBeDisabled();
+  await panel.getByRole("button", { name: "Marcar todas como lidas" }).click();
+  await expect(page.getByRole("button", { name: "Notificações", exact: true })).toBeVisible();
+  await expect(panel.getByRole("button", { name: "Marcar todas como lidas" })).toBeDisabled();
 
-  await page
-    .getByRole("row", { name: /Agora você é Usuário/ })
-    .getByRole("button", { name: /^Ações de/ })
-    .click();
+  await panel.getByRole("button", { name: "Ações de Seu cargo mudou" }).first().click();
   await page.getByRole("menuitem", { name: "Marcar como não lida" }).click();
-  await expect(page.getByRole("link", { name: "Notificações (1)" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Notificações (1)" })).toBeVisible();
 
-  // Filtro de status pela busca da lista.
-  await page.getByPlaceholder("Buscar no título ou no texto").fill("administrador");
-  await expect(page.getByRole("row", { name: /Agora você é Administrador/ })).toBeVisible();
-  await expect(page.getByRole("row", { name: /Agora você é Usuário/ })).toHaveCount(0);
+  // A lupa abre a busca, no título e no texto.
+  await panel.getByRole("button", { name: "Buscar notificações" }).click();
+  const search = page.getByRole("dialog", { name: "Buscar notificações" });
+  await search.getByRole("searchbox", { name: "Buscar notificações" }).fill("usuário");
+  await expect(search.getByRole("button", { name: /Agora você é Usuário/ })).toBeVisible();
+  await expect(search.getByRole("button", { name: /Agora você é Administrador/ })).toHaveCount(0);
+  await page.keyboard.press("Escape");
+
+  // A engrenagem abre as mesmas configurações do menu do perfil.
+  await page.getByRole("button", { name: "Notificações (1)" }).click();
+  await panel.getByRole("button", { name: "Configurações de notificação" }).click();
+  await expect(page.getByRole("dialog", { name: "Notificações" })).toBeVisible();
 });
 
 test("sem permissão, a faixa pede para ativar; bloqueada, ensina a desbloquear", async ({
@@ -143,7 +187,7 @@ test("uma aba por navegador: a segunda mostra Usar aqui e toma o lugar da primei
   await expect(first.getByRole("button", { name: "Usar aqui" })).toBeVisible();
 });
 
-test("menu da notificação pelo clique direito: arquivar; e silenciar os avisos", async ({
+test("menu da notificação no painel: arquivar; e silenciar os avisos", async ({
   page: admin,
   browser,
 }) => {
@@ -151,21 +195,34 @@ test("menu da notificação pelo clique direito: arquivar; e silenciar os avisos
   person = await newPerson(browser, admin, "Karla Menu");
   const { page } = person;
   await changeRole(admin, "Karla Menu", "Administrador");
-  await page.getByRole("link", { name: "Notificações (1)" }).click();
+  await page.getByRole("button", { name: "Notificações (1)" }).click();
+  const panel = page.getByRole("dialog", { name: "Painel de notificações" });
 
-  await page.getByRole("row", { name: /Seu cargo mudou/ }).click({ button: "right" });
+  await panel.getByRole("button", { name: "Ações de Seu cargo mudou" }).click();
   await page.getByRole("menuitem", { name: "Arquivar" }).click();
-  await expect(page.getByRole("row", { name: /Seu cargo mudou/ })).toBeHidden();
-  await expect(page.getByRole("link", { name: "Notificações", exact: true })).toBeVisible();
+  await expect(panel.getByRole("button", { name: /Seu cargo mudou/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Notificações", exact: true })).toBeVisible();
 
-  await page.getByRole("button", { name: "Silenciar avisos" }).click();
-  await page.getByRole("menuitem", { name: "Silenciar por" }).click();
-  await page.getByRole("menuitem", { name: "8 horas" }).click();
-  await expect(page.getByText(/Avisos silenciados até/)).toBeVisible();
-  await page.evaluate(() => ((window as unknown as { __shown: unknown[] }).__shown.length = 0));
+  // A arquivada aparece na busca, na pasta Arquivadas, e volta pelo menu.
+  await panel.getByRole("button", { name: "Buscar notificações" }).click();
+  const search = page.getByRole("dialog", { name: "Buscar notificações" });
+  await search.getByRole("button", { name: "Arquivadas" }).click();
+  await search.getByRole("button", { name: "Ações de Seu cargo mudou" }).click();
+  await page.getByRole("menuitem", { name: "Desarquivar" }).click();
+  await expect(search.getByText("Nenhuma notificação arquivada")).toBeVisible();
+  await page.keyboard.press("Escape");
 
   await changeRole(admin, "Karla Menu", "Usuário");
-  await expect(page.getByRole("link", { name: "Notificações (1)" })).toBeVisible();
+  await page.getByRole("button", { name: "Notificações (2)" }).click();
+  await panel.getByRole("button", { name: "Ações de Seu cargo mudou" }).first().click();
+  await page.getByRole("menuitem", { name: "Silenciar avisos" }).click();
+  await page.getByRole("menuitem", { name: "8 horas" }).click();
+  await expect(panel.getByText(/Avisos silenciados até/)).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.evaluate(() => ((window as unknown as { __shown: unknown[] }).__shown.length = 0));
+
+  await changeRole(admin, "Karla Menu", "Administrador");
+  await expect(page.getByRole("button", { name: "Notificações (3)" })).toBeVisible();
   await page.waitForTimeout(300);
   expect(await shownNotifications(page)).toEqual([]);
 });
